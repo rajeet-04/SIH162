@@ -1,0 +1,24 @@
+.worktrees/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Generated project artifacts
+data/manifests/
+data/cleaned/
+data/features/
+data/labels/
+data/splits/
+models/
+reports/generated/
+
+# Frontend
+app/node_modules/
+app/dist/
+app/playwright-report/
+app/test-results/

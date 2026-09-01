@@ -1,0 +1,10 @@
+sources:
+  structured: D:/data/csv_output
+  firesat: D:/data/firesat
+  flaresat: D:/data/flaresat_github
+  mcd64a1: D:/MCD64A1
+  micasa_3h: R:/MiCASA_FLUX_3H
+  micasa_daily: R:/MiCASA_FLUX_DAILY
+  global_fire_atlas: R:/Global_Fire_Atlas
+  project_data: D:/data
+artifacts_root: data

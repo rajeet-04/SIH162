@@ -12,7 +12,7 @@ from thermis.api import ModelRuntime, create_app
 from thermis.config import load_settings
 from thermis.evaluation import evaluate_ranking_set
 from thermis.features import build_event_features
-from thermis.image_model import ImageRecord, train_image_smoke
+from thermis.image_model import ImageRecord, assign_image_splits, train_image_smoke
 from thermis.images import build_image_manifest
 from thermis.inventory import inventory_sources
 from thermis.labels import assign_labels
@@ -232,11 +232,15 @@ def train_image(
 ) -> None:
     """Run the bounded CUDA image-verifier smoke train and export TorchScript."""
     frame = pd.read_parquet(manifest)
+    frame = assign_image_splits(frame)
+    split_path = Path("data/splits/image_splits.parquet")
+    split_path.parent.mkdir(parents=True, exist_ok=True)
+    frame[["image_id", "scene_group", "split"]].to_parquet(split_path, index=False)
     records = [
         ImageRecord(
             image_id=str(row.image_id),
             scene_group=str(row.scene_group),
-            split="development",
+            split=str(row.split),
             label=str(row.label_source),
             path=str(row.path),
         )
@@ -246,5 +250,5 @@ def train_image(
     metadata = train_image_smoke(records, Path(output), epochs=epochs)
     typer.echo(
         f"image_rows={metadata['training_rows']} device={metadata['device']} "
-        f"ranking_rows_used={metadata['ranking_rows_used']}"
+        f"ranking_rows={metadata['ranking_rows']} ranking_rows_used={metadata['ranking_rows_used']}"
     )

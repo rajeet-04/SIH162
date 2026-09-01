@@ -8,5 +8,10 @@
   "epochs": 1,
   "ranking_rows_used": 0,
   "cpu_export": "models/image-smoke/image_verifier.ts",
-  "cpu_output_shape": [1, 2]
+  "cpu_output_shape": [
+    1,
+    2
+  ],
+  "loss_final": 0.13492953777313232,
+  "ranking_rows": 4799
 }

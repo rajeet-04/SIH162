@@ -26,6 +26,20 @@ class ImageQuality:
     reason: str | None = None
 
 
+def assign_image_splits(frame, ranking_fraction: float = 0.10):
+    """Assign deterministic grouped holdout splits when image timestamps are absent."""
+    if not 0 < ranking_fraction < 1:
+        raise ValueError("ranking_fraction must be between zero and one")
+    result = frame.copy()
+    groups = sorted(result["scene_group"].fillna(result["image_id"]).astype(str).unique())
+    ranking_count = max(1, round(len(groups) * ranking_fraction))
+    ranking_groups = set(groups[-ranking_count:])
+    result["split"] = result["scene_group"].fillna(result["image_id"]).astype(str).map(
+        lambda group: "ranking" if group in ranking_groups else "development"
+    )
+    return result
+
+
 def assert_scene_isolation(records: list[ImageRecord]) -> None:
     groups: dict[str, str] = {}
     for record in records:
@@ -71,6 +85,7 @@ def train_image_smoke(
     from torchvision.models import resnet18
 
     candidates = [record for record in records if record.split != "ranking"]
+    ranking_rows = sum(record.split == "ranking" for record in records)
     random.Random(26162).shuffle(candidates)
     development = candidates[:max_records]
     if not development:
@@ -116,6 +131,7 @@ def train_image_smoke(
         "training_rows": len(development),
         "epochs": epochs,
         "loss_final": losses[-1] if losses else None,
+        "ranking_rows": ranking_rows,
         "ranking_rows_used": 0,
     }
     (output / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")

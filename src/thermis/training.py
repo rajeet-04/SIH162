@@ -4,6 +4,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.frozen import FrozenEstimator
 from sklearn.metrics import f1_score, recall_score
 
 from thermis.artifacts import save_bundle
@@ -49,19 +51,38 @@ def _fit_one(
         verbose=False,
         allow_writing_files=False,
     )
-    model.fit(development[feature_columns], development[target])
-    pred = model.predict(development[feature_columns]).ravel()
+    if "timestamp_utc" in development:
+        development = development.sort_values("timestamp_utc")
+    cutoff = max(1, min(len(development) - 1, int(len(development) * 0.80)))
+    fit_frame = development.iloc[:cutoff]
+    validation_frame = development.iloc[cutoff:]
+    if fit_frame[target].nunique() < 2 or validation_frame[target].nunique() < 2:
+        raise ValueError(f"{target} chronological holdout lacks both classes")
+    model.fit(fit_frame[feature_columns], fit_frame[target])
+    # scikit-learn 1.6+ represents a prefit estimator explicitly.  Keeping
+    # the estimator frozen makes the calibration-only holdout unable to
+    # refit the CatBoost model or accidentally consume ranking rows.
+    smallest_class = int(validation_frame[target].value_counts().min())
+    calibration_cv = min(5, smallest_class)
+    if calibration_cv < 2:
+        raise ValueError(f"{target} calibration holdout needs at least two rows per class")
+    calibrated = CalibratedClassifierCV(
+        FrozenEstimator(model), method="sigmoid", cv=calibration_cv
+    )
+    calibrated.fit(validation_frame[feature_columns], validation_frame[target])
+    pred = calibrated.predict(validation_frame[feature_columns]).ravel()
     metrics = {
-        "macro_f1": float(f1_score(development[target], pred, average="macro")),
-        "recall": float(recall_score(development[target], pred, average="macro")),
+        "macro_f1": float(f1_score(validation_frame[target], pred, average="macro")),
+        "recall": float(recall_score(validation_frame[target], pred, average="macro")),
     }
     bundle = {
-        "model": model,
+        "model": calibrated,
         "target": target,
         "feature_columns": feature_columns,
         "class_order": [str(value) for value in model.classes_],
         "metrics": metrics,
-        "training_rows": int(len(development)),
+        "training_rows": int(len(fit_frame)),
+        "validation_rows": int(len(validation_frame)),
         "ranking_rows_used": 0,
     }
     save_bundle(bundle, output)

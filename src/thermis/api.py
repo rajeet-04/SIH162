@@ -28,6 +28,11 @@ class ModelRuntime:
         self.stage2 = stage2
         self.demo = demo or {}
         self.model_version = "tabular-local-0.1"
+        self.metrics = {
+            "stage1": stage1.get("metrics", {}),
+            "stage2": stage2.get("metrics", {}),
+            "ranking_promotion": "blocked_pending_authoritative_labels",
+        }
 
     @classmethod
     def from_paths(cls, root: Path, demo_path: Path | None = None) -> "ModelRuntime":

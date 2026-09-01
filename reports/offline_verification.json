@@ -1,0 +1,47 @@
+{
+  "offline": true,
+  "event_rows": 9186,
+  "split_counts": {
+    "development": 8267,
+    "ranking": 919
+  },
+  "tabular_bundles": {
+    "stage1": {
+      "fit_rows": 739,
+      "calibration_rows": 185,
+      "metrics": {
+        "macro_f1": 1.0,
+        "recall": 1.0
+      },
+      "model": "CalibratedClassifierCV"
+    },
+    "stage2": {
+      "fit_rows": 739,
+      "calibration_rows": 185,
+      "metrics": {
+        "macro_f1": 1.0,
+        "recall": 1.0
+      },
+      "model": "CalibratedClassifierCV"
+    }
+  },
+  "image_verifier": {
+    "device": "cpu",
+    "output_shape": [
+      1,
+      2
+    ]
+  },
+  "image_split_counts": {
+    "development": 43193,
+    "ranking": 4799
+  },
+  "demo_events": 3,
+  "api": {
+    "health": 200,
+    "events": 200,
+    "metrics": 200,
+    "predict": 200
+  },
+  "ranking_promotion": "blocked_pending_authoritative_labels"
+}

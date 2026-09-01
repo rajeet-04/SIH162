@@ -200,7 +200,8 @@ def serve(
     """Serve the loaded tabular model and API contracts."""
     import uvicorn
 
-    runtime = ModelRuntime.from_paths(Path("models/tabular"))
+    demo_path = Path("data/demo/events.json") if demo else None
+    runtime = ModelRuntime.from_paths(Path("models/tabular"), demo_path=demo_path)
     if demo:
         runtime.model_version = "tabular-local-0.1-offline"
     uvicorn.run(create_app(runtime), host=host, port=port)

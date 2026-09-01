@@ -30,8 +30,17 @@ class ModelRuntime:
         self.model_version = "tabular-local-0.1"
 
     @classmethod
-    def from_paths(cls, root: Path) -> "ModelRuntime":
-        return cls(load_bundle(root / "stage1.joblib"), load_bundle(root / "stage2.joblib"))
+    def from_paths(cls, root: Path, demo_path: Path | None = None) -> "ModelRuntime":
+        demo = {}
+        if demo_path and demo_path.exists():
+            import json
+
+            demo = json.loads(demo_path.read_text(encoding="utf-8"))
+        return cls(
+            load_bundle(root / "stage1.joblib"),
+            load_bundle(root / "stage2.joblib"),
+            demo=demo,
+        )
 
     def predict(self, request: PredictionRequest) -> dict[str, Any]:
         values = {column: 0.0 for column in FEATURE_COLUMNS}

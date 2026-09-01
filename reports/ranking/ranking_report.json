@@ -1,0 +1,17 @@
+{
+  "ranking_rows": 919,
+  "authoritative_label_rows": 0,
+  "metrics": {
+    "industrial_fire_recall": 0.0,
+    "macro_f1": 0.0,
+    "persistent_false_alert_rate": 0.0,
+    "cpu_latency_ms_p95": 0.01260522306708537,
+    "severe_segment_collapse": true
+  },
+  "promoted": false,
+  "reasons": [
+    "industrial_fire_recall_below_0.85",
+    "macro_f1_below_0.75",
+    "severe_segment_collapse"
+  ]
+}

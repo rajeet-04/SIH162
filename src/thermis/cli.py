@@ -47,7 +47,10 @@ def inventory(
 
 
 @app.command("prepare-manifests")
-def prepare_manifests(config: str = "config/sources.yaml") -> None:
+def prepare_manifests(
+    config: str = "config/sources.yaml",
+    verify_checksums: bool = typer.Option(False, help="Hash every Fire Atlas archive."),
+) -> None:
     """Build lightweight provenance manifests from configured source roots."""
     config_path = Path(config)
     settings = load_settings(config_path)
@@ -57,7 +60,11 @@ def prepare_manifests(config: str = "config/sources.yaml") -> None:
     env = build_environment_manifest(settings.sources)
     env.to_parquet(manifests / "environment_manifest.parquet", index=False)
     atlas_root = settings.sources.get("global_fire_atlas")
-    atlas = build_fire_atlas_manifest(atlas_root) if atlas_root and atlas_root.exists() else None
+    atlas = (
+        build_fire_atlas_manifest(atlas_root, verify_checksums=verify_checksums)
+        if atlas_root and atlas_root.exists()
+        else None
+    )
     if atlas is not None:
         atlas.to_parquet(manifests / "fire_atlas_manifest.parquet", index=False)
     images = build_image_manifest(settings.sources)

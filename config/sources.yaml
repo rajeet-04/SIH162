@@ -1,10 +1,12 @@
 sources:
   structured: D:/data/csv_output
-  firesat: D:/data/firesat
+  firesat: D:/data/firesat_1
   flaresat: D:/data/flaresat_github
   mcd64a1: D:/MCD64A1
   micasa_3h: R:/MiCASA_FLUX_3H
   micasa_daily: R:/MiCASA_FLUX_DAILY
   global_fire_atlas: R:/Global_Fire_Atlas
-  project_data: D:/data
+  fire_training: D:/data/Training
+  fire_test: D:/data/Test
+  sentinel_safe: D:/data/S2C_MSIL1C_20260825T101021_N0512_R022_T32TQR_20260825T135029.SAFE
 artifacts_root: data

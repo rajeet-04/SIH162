@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from hashlib import sha256
-from io import BytesIO
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -58,9 +57,7 @@ def verify_sha256_sidecar(path: Path) -> bool:
 
 
 def inspect_fire_atlas_zip(path: Path) -> FireAtlasArchiveMetadata:
-    """Inspect DBF metadata inside an archive without extracting it to disk."""
-    import shapefile
-
+    """Inspect DBF metadata inside an archive without extracting or loading it."""
     name = path.name.lower()
     kind = "ignition" if "ignition" in name else "perimeter"
     year_match = next(
@@ -70,13 +67,25 @@ def inspect_fire_atlas_zip(path: Path) -> FireAtlasArchiveMetadata:
     if year_match is None:
         raise ValueError(f"cannot parse year from {path.name}")
     with ZipFile(path) as archive:
-        members = {member.lower(): member for member in archive.namelist()}
-        dbf_name = next((name for name in members if name.endswith(".dbf")), None)
+        dbf_name = next(
+            (member for member in archive.namelist() if member.lower().endswith(".dbf")),
+            None,
+        )
         if dbf_name is None:
             raise ValueError(f"archive has no DBF: {path.name}")
-        reader = shapefile.Reader(dbf=BytesIO(archive.read(members[dbf_name])))
-        fields = tuple(field[0] for field in reader.fields[1:])
-        record_count = len(reader)
+        with archive.open(dbf_name) as dbf:
+            header = dbf.read(32)
+            if len(header) != 32 or header[0] not in {0x03, 0x30, 0x31, 0x32, 0x43, 0x63}:
+                raise ValueError(f"invalid DBF header: {path.name}")
+            record_count = int.from_bytes(header[4:8], "little")
+            header_length = int.from_bytes(header[8:10], "little")
+            field_bytes = dbf.read(max(0, header_length - 33))
+            fields = tuple(
+                field_bytes[offset : offset + 11].split(b"\x00", 1)[0].decode("ascii")
+                for offset in range(0, len(field_bytes), 32)
+                if field_bytes[offset : offset + 1] != b"\x0d"
+                and field_bytes[offset : offset + 11].strip(b"\x00")
+            )
     return FireAtlasArchiveMetadata(
         path=str(path),
         year=int(year_match),
@@ -87,8 +96,18 @@ def inspect_fire_atlas_zip(path: Path) -> FireAtlasArchiveMetadata:
     )
 
 
-def build_fire_atlas_manifest(root: Path) -> pd.DataFrame:
+def build_fire_atlas_manifest(root: Path, verify_checksums: bool = False) -> pd.DataFrame:
     rows = []
     for path in sorted(root.glob("*.zip")):
-        rows.append(inspect_fire_atlas_zip(path).__dict__)
+        metadata = inspect_fire_atlas_zip(path)
+        if not verify_checksums:
+            metadata = FireAtlasArchiveMetadata(
+                path=metadata.path,
+                year=metadata.year,
+                kind=metadata.kind,
+                record_count=metadata.record_count,
+                fields=metadata.fields,
+                checksum_ok=False,
+            )
+        rows.append(metadata.__dict__)
     return pd.DataFrame(rows)

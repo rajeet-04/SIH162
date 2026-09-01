@@ -1,7 +1,7 @@
 # SIH26162 phase checkpoint
 
 Branch: `feature/sih26162-mvp`  
-Latest commit: `0f6d6d3 feat: harden training and offline verification`
+Latest commit: `c64f042 feat: complete dashboard investigation journey`
 
 ## Exit evidence
 

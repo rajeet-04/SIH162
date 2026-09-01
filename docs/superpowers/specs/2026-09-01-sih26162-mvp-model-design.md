@@ -87,6 +87,9 @@ An end-to-end multimodal neural network is deferred until the tabular and image 
 - `R:\MiCASA_FLUX_DAILY`: daily MiCASA NetCDF files.
 - `R:\MiCASA_FLUX_3H`: 3-hourly observations packaged as daily NetCDF files.
 - `D:\data\MCD64A1` and `D:\MCD64A1`: MODIS burned-area HDF files. Their relationship must be resolved by content manifest before either copy is used.
+- `R:\Global_Fire_Atlas`: 154 GeoTIFF products and 28 zipped shapefile products covering 2003-2016. The ignition archives contain 13,250,145 fire records; perimeter archives contain 13,250,608 records with size, perimeter, start/end date, duration, expansion, fire line, speed, direction, land cover, and tile identity.
+
+Global Fire Atlas ignition and perimeter archives describe the same fire entities and are joined by year plus `fire_ID`; they are never stacked as independent training examples. Perimeter archives contain 463 additional records overall, so join coverage and unmatched identifiers are recorded. All 182 Global Fire Atlas data files have SHA-256 sidecars, and inventory verifies every checksum before use. Large rasters are processed with windowed reads and never loaded completely into memory.
 
 ### 4.3 Required Context Sources
 
@@ -218,7 +221,7 @@ No feature may use information recorded after the prediction timestamp. Historic
 Labels retain their source and confidence. Weak supervision is acceptable for bootstrapping but is not treated as ground truth.
 
 - Repeated stationary detections aligned with known flare points support `persistent_industrial_heat_or_flare`.
-- Burned-area overlap and moving or spreading vegetation-region events support `wildfire_or_agricultural_burn`.
+- Global Fire Atlas ignition/perimeter entities and burned-area overlap provide historical wildfire behavior supervision. Moving or spreading vegetation-region events support `wildfire_or_agricultural_burn`.
 - Sudden, non-persistent high-FRP events near industrial infrastructure support industrial-fire candidates, subject to manual verification or authoritative event evidence.
 - Urban and no-fire sources support image-background verification, not event-level non-emergency labels without temporal context.
 - Conflicting, weak, or ambiguous evidence receives `other_or_uncertain` or is excluded from supervised training.
@@ -238,6 +241,8 @@ The split is chronological and grouped:
 - The ranking set is evaluated only after model architecture, features, hyperparameters, calibration method, and thresholds are frozen.
 
 If a single split leaves important regions or classes absent, use grouped temporal cross-validation inside the older 90% for development, while preserving the final newest 10% unchanged.
+
+Global Fire Atlas ends in 2016 and is therefore historical training/reference evidence, not the sole ranking population. The final newest 10% must contain contemporary FIRMS-style events with independently defensible labels. Report source and time-period performance separately to expose historical-to-modern distribution shift.
 
 ## 11. Training Protocol
 
@@ -440,6 +445,7 @@ Run the untouched 10% ranking evaluation, segment diagnostics, CPU inference che
 5. External-service failure during demo: use cached enrichment and a frozen offline case set.
 6. Attractive but unreliable confidence: calibrate probabilities and expose uncertainty and missing context.
 7. Aggregate metrics hiding failures: require segment diagnostics before promotion.
+8. Historical fire-atlas shift: train with Global Fire Atlas behavior labels but promote only on contemporary events, reporting performance by source and era.
 
 ## 22. Final Design Decision
 

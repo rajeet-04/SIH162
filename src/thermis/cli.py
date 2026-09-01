@@ -10,6 +10,7 @@ from thermis.adapters.fire_atlas import build_fire_atlas_manifest
 from thermis.adapters.structured import read_frp_events
 from thermis.api import ModelRuntime, create_app
 from thermis.config import load_settings
+from thermis.evaluation import evaluate_ranking_set
 from thermis.features import build_event_features
 from thermis.images import build_image_manifest
 from thermis.inventory import inventory_sources
@@ -205,3 +206,18 @@ def serve(
     if demo:
         runtime.model_version = "tabular-local-0.1-offline"
     uvicorn.run(create_app(runtime), host=host, port=port)
+
+
+@app.command("evaluate-ranking")
+def evaluate_ranking(
+    features: str = "data/features/event_features.parquet",
+    splits: str = "data/splits/event_splits.parquet",
+    models: str = "models/tabular",
+    output: str = "reports/ranking",
+) -> None:
+    """Evaluate the untouched ranking rows without model mutation."""
+    report = evaluate_ranking_set(Path(features), Path(splits), Path(models), Path(output))
+    typer.echo(
+        f"ranking_rows={report['ranking_rows']} promoted={report['promoted']} "
+        f"reasons={','.join(report['reasons'])}"
+    )

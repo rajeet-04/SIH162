@@ -20,5 +20,8 @@ reports/generated/
 # Frontend
 app/node_modules/
 app/dist/
+app/.bun-cache/
+app/.bun-tmp/
+app/*.tsbuildinfo
 app/playwright-report/
 app/test-results/

@@ -2,7 +2,10 @@ from pathlib import Path
 
 import typer
 
+from thermis.adapters.environmental import build_environment_manifest
+from thermis.adapters.fire_atlas import build_fire_atlas_manifest
 from thermis.config import load_settings
+from thermis.images import build_image_manifest
 from thermis.inventory import inventory_sources
 
 app = typer.Typer(help="SIH26162 data and model pipeline")
@@ -41,3 +44,24 @@ def inventory(
     manifest = inventory_sources(settings)
     manifest.to_parquet(destination, index=False)
     typer.echo(f"wrote {len(manifest)} rows to {destination}")
+
+
+@app.command("prepare-manifests")
+def prepare_manifests(config: str = "config/sources.yaml") -> None:
+    """Build lightweight provenance manifests from configured source roots."""
+    config_path = Path(config)
+    settings = load_settings(config_path)
+    root = config_path.parent.parent / settings.artifacts_root
+    manifests = root / "manifests"
+    manifests.mkdir(parents=True, exist_ok=True)
+    env = build_environment_manifest(settings.sources)
+    env.to_parquet(manifests / "environment_manifest.parquet", index=False)
+    atlas_root = settings.sources.get("global_fire_atlas")
+    atlas = build_fire_atlas_manifest(atlas_root) if atlas_root and atlas_root.exists() else None
+    if atlas is not None:
+        atlas.to_parquet(manifests / "fire_atlas_manifest.parquet", index=False)
+    images = build_image_manifest(settings.sources)
+    images.to_parquet(manifests / "image_manifest.parquet", index=False)
+    typer.echo(f"environment={len(env)} images={len(images)}")
+    if atlas is not None:
+        typer.echo(f"fire_atlas_archives={len(atlas)} checksums={int(atlas['checksum_ok'].sum())}")

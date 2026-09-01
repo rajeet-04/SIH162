@@ -1,0 +1,12 @@
+{
+  "model": "resnet18",
+  "torch": "2.13.0+cu130",
+  "cuda_version": "13.0",
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 5050 Laptop GPU",
+  "training_rows": 128,
+  "epochs": 1,
+  "ranking_rows_used": 0,
+  "cpu_export": "models/image-smoke/image_verifier.ts",
+  "cpu_output_shape": [1, 2]
+}

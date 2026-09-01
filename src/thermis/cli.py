@@ -1,12 +1,23 @@
+import json
+from hashlib import sha256
 from pathlib import Path
 
+import pandas as pd
 import typer
 
 from thermis.adapters.environmental import build_environment_manifest
 from thermis.adapters.fire_atlas import build_fire_atlas_manifest
+from thermis.adapters.structured import read_frp_events
 from thermis.config import load_settings
+from thermis.features import build_event_features
 from thermis.images import build_image_manifest
 from thermis.inventory import inventory_sources
+from thermis.labels import assign_labels
+from thermis.splits import (
+    assert_no_group_overlap,
+    assert_ranking_is_newest,
+    make_grouped_time_split,
+)
 
 app = typer.Typer(help="SIH26162 data and model pipeline")
 
@@ -72,3 +83,83 @@ def prepare_manifests(
     typer.echo(f"environment={len(env)} images={len(images)}")
     if atlas is not None:
         typer.echo(f"fire_atlas_archives={len(atlas)} checksums={int(atlas['checksum_ok'].sum())}")
+
+
+@app.command("label-events")
+def label_events(
+    events: str = "data/cleaned/events.parquet",
+    output: str = "data/labels/events_labeled.parquet",
+) -> None:
+    """Apply conservative labels and write a label-distribution report."""
+    frame = pd.read_parquet(events)
+    labeled = assign_labels(frame)
+    destination = Path(output)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    labeled.to_parquet(destination, index=False)
+    report = labeled["label_stage_2"].value_counts(dropna=False).to_dict()
+    report_path = Path("reports/data/label_distribution.json")
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_payload = {str(key): int(value) for key, value in report.items()}
+    report_path.write_text(json.dumps(report_payload, indent=2), encoding="utf-8")
+    typer.echo(f"wrote {len(labeled)} labeled events to {destination}")
+
+
+@app.command("prepare-events")
+def prepare_events(
+    config: str = "config/sources.yaml",
+    output: str = "data/cleaned/events.parquet",
+    rejects: str = "data/cleaned/event_rejects.parquet",
+) -> None:
+    """Normalize structured FRP CSV files and preserve rejected rows."""
+    settings = load_settings(Path(config))
+    structured_root = settings.sources["structured"]
+    frames = [read_frp_events(path) for path in sorted(structured_root.glob("*.csv"))]
+    if not frames:
+        raise typer.BadParameter(f"no CSV files found under {structured_root}")
+    combined = pd.concat(frames, ignore_index=True)
+    destination = Path(output)
+    reject_path = Path(rejects)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    reject_path.parent.mkdir(parents=True, exist_ok=True)
+    combined.loc[combined["reject_reason"].isna()].to_parquet(destination, index=False)
+    combined.loc[combined["reject_reason"].notna()].to_parquet(reject_path, index=False)
+    typer.echo(
+        f"accepted={combined['reject_reason'].isna().sum()} "
+        f"rejected={combined['reject_reason'].notna().sum()}"
+    )
+
+
+@app.command("build-features")
+def build_features(
+    events: str = "data/cleaned/events.parquet",
+    output: str = "data/features/event_features.parquet",
+) -> None:
+    """Build point-in-time persistence features for normalized events."""
+    frame = pd.read_parquet(events)
+    features = build_event_features(frame)
+    destination = Path(output)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    features.to_parquet(destination, index=False)
+    typer.echo(f"wrote {len(features)} feature rows to {destination}")
+
+
+@app.command("make-splits")
+def make_splits(
+    events: str = "data/labels/events_labeled.parquet",
+    images: str = "data/manifests/image_manifest.parquet",
+    output: str = "data/splits",
+) -> None:
+    """Freeze grouped chronological event and image split manifests."""
+    del images
+    frame = pd.read_parquet(events)
+    group_cols = ["scene_group"] if "scene_group" in frame.columns else ["event_id"]
+    split = make_grouped_time_split(frame, "timestamp_utc", group_cols, 0.10)
+    assert_no_group_overlap(split, group_cols)
+    assert_ranking_is_newest(split, "timestamp_utc")
+    destination = Path(output)
+    destination.mkdir(parents=True, exist_ok=True)
+    target = destination / "event_splits.parquet"
+    split.to_parquet(target, index=False)
+    digest = sha256(target.read_bytes()).hexdigest()
+    Path(f"{target}.sha256").write_text(f"{digest}  {target.name}\n", encoding="ascii")
+    typer.echo(f"wrote {len(split)} split rows to {target}")

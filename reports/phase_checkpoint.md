@@ -1,7 +1,7 @@
 # SIH26162 phase checkpoint
 
 Branch: `feature/sih26162-mvp`  
-Latest commit: `574d8aa docs: refresh final checkpoint`
+Latest implementation checkpoint: see `git log --oneline` for the current HEAD.
 
 ## Exit evidence
 

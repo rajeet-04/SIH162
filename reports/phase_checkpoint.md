@@ -18,6 +18,8 @@ Latest commit: `0f6d6d3 feat: harden training and offline verification`
 
 - Python: `32 passed`; Ruff clean.
 - Frontend: `1` focused Vitest test file passed; Vite production build passed.
+- Browser: live Playwright CLI rehearsal passed map selection, evidence, 7D
+  timeline, and evaluation view.
 - Offline rehearsal: API status `200` for health, events, metrics, and predict;
   CPU image verifier output shape `(1, 2)`.
 - GPU: `torch.cuda.is_available() == True`; device `NVIDIA GeForce RTX 5050

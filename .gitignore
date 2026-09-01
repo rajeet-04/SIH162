@@ -27,5 +27,6 @@ app/vite.config.js
 app/vite.config.d.ts
 app/playwright-report/
 app/test-results/
+.playwright-cli/
 
 reports/ranking/

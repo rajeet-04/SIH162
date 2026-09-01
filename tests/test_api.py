@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -53,3 +54,17 @@ def test_predict_accepts_valid_request() -> None:
     )
     assert response.status_code == 200
     assert response.json()["prediction"]["model_version"] == "fake-1"
+
+
+def test_health_reports_optional_image_verifier_state() -> None:
+    client = TestClient(create_app(FakeRuntime()))
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json()["image_verifier_loaded"] is False
+    assert response.json()["image_verifier_device"] == "cpu"
+
+
+def test_verify_image_requires_loaded_runtime() -> None:
+    client = TestClient(create_app(FakeRuntime()))
+    response = client.post("/verify-image", json={"path": str(Path("missing.jpg"))})
+    assert response.status_code == 503

@@ -229,6 +229,8 @@ def train_image(
     manifest: str = "data/manifests/image_manifest.parquet",
     output: str = "models/image-smoke",
     epochs: int = 1,
+    max_records: int = 0,
+    batch_size: int = 16,
 ) -> None:
     """Run the bounded CUDA image-verifier smoke train and export TorchScript."""
     frame = pd.read_parquet(manifest)
@@ -247,7 +249,13 @@ def train_image(
         for row in frame.itertuples()
         if bool(row.readable) and str(row.label_source).lower() in {"fire", "no_fire"}
     ]
-    metadata = train_image_smoke(records, Path(output), epochs=epochs)
+    metadata = train_image_smoke(
+        records,
+        Path(output),
+        epochs=epochs,
+        max_records=None if max_records <= 0 else max_records,
+        batch_size=batch_size,
+    )
     typer.echo(
         f"image_rows={metadata['training_rows']} device={metadata['device']} "
         f"ranking_rows={metadata['ranking_rows']} ranking_rows_used={metadata['ranking_rows_used']}"

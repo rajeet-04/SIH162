@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from thermis.artifacts import load_bundle
 from thermis.features import FEATURE_COLUMNS
 from thermis.fusion import FusionInput, RiskPolicy, fuse_prediction
+from thermis.image_model import _image_tensor, inspect_image
 
 
 class PredictionRequest(BaseModel):
@@ -20,14 +21,33 @@ class PredictionRequest(BaseModel):
     frp_uncertainty: float | None = Field(default=None, ge=0)
 
 
+class ImageVerificationRequest(BaseModel):
+    path: str = Field(min_length=1)
+
+
 class ModelRuntime:
     def __init__(
-        self, stage1: dict[str, Any], stage2: dict[str, Any], demo: dict[str, Any] | None = None
+        self,
+        stage1: dict[str, Any],
+        stage2: dict[str, Any],
+        demo: dict[str, Any] | None = None,
+        image_model_path: Path | None = None,
     ):
         self.stage1 = stage1
         self.stage2 = stage2
         self.demo = demo or {}
         self.model_version = "tabular-local-0.1"
+        self.image_model = None
+        self.image_metadata: dict[str, Any] = {}
+        if image_model_path and image_model_path.exists():
+            import json
+
+            import torch
+
+            self.image_model = torch.jit.load(str(image_model_path), map_location="cpu").eval()
+            metadata_path = image_model_path.with_name("metadata.json")
+            if metadata_path.exists():
+                self.image_metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         self.metrics = {
             "stage1": stage1.get("metrics", {}),
             "stage2": stage2.get("metrics", {}),
@@ -35,7 +55,12 @@ class ModelRuntime:
         }
 
     @classmethod
-    def from_paths(cls, root: Path, demo_path: Path | None = None) -> "ModelRuntime":
+    def from_paths(
+        cls,
+        root: Path,
+        demo_path: Path | None = None,
+        image_model_path: Path | None = None,
+    ) -> "ModelRuntime":
         demo = {}
         if demo_path and demo_path.exists():
             import json
@@ -45,6 +70,7 @@ class ModelRuntime:
             load_bundle(root / "stage1.joblib"),
             load_bundle(root / "stage2.joblib"),
             demo=demo,
+            image_model_path=image_model_path or root.parent / "image-smoke/image_verifier.ts",
         )
 
     def predict(self, request: PredictionRequest) -> dict[str, Any]:
@@ -91,6 +117,30 @@ class ModelRuntime:
     def event(self, event_id: str) -> dict[str, Any] | None:
         return self.demo.get(event_id)
 
+    def verify_image(self, path: Path) -> dict[str, Any]:
+        if self.image_model is None:
+            raise RuntimeError("image verifier is not loaded")
+        if not path.exists() or not path.is_file():
+            raise FileNotFoundError(path)
+        quality = inspect_image(path)
+        if not quality.readable or quality.channels is None:
+            raise ValueError(f"image is not readable: {quality.reason or 'unknown error'}")
+        import torch
+
+        with torch.inference_mode():
+            logits = self.image_model(_image_tensor(path).unsqueeze(0))
+            probabilities = torch.softmax(logits, dim=1)[0].tolist()
+        classes = self.image_metadata.get("classes", ["fire", "no_fire"])
+        return {
+            "path": str(path),
+            "classes": {
+                str(label): round(float(probability), 6)
+                for label, probability in zip(classes, probabilities, strict=True)
+            },
+            "predicted_class": str(classes[int(torch.argmax(logits, dim=1).item())]),
+            "model_version": "image-resnet18-local-0.1",
+        }
+
 
 def create_app(runtime: ModelRuntime | Any | None = None) -> FastAPI:
     app = FastAPI(title="THERMIS SIH26162", version="0.1.0")
@@ -102,6 +152,8 @@ def create_app(runtime: ModelRuntime | Any | None = None) -> FastAPI:
             "status": "ok",
             "model_version": getattr(active_runtime, "model_version", "demo"),
             "offline_demo": bool(getattr(active_runtime, "demo", {})),
+            "image_verifier_loaded": bool(getattr(active_runtime, "image_model", None)),
+            "image_verifier_device": "cpu",
         }
 
     @app.get("/events")
@@ -121,6 +173,17 @@ def create_app(runtime: ModelRuntime | Any | None = None) -> FastAPI:
         if active_runtime is None:
             raise HTTPException(status_code=503, detail="model runtime is not loaded")
         return {"prediction": active_runtime.predict(request)}
+
+    @app.post("/verify-image")
+    def verify_image(request: ImageVerificationRequest) -> dict[str, Any]:
+        if active_runtime is None or not hasattr(active_runtime, "verify_image"):
+            raise HTTPException(status_code=503, detail="image verifier is not loaded")
+        try:
+            return {"verification": active_runtime.verify_image(Path(request.path))}
+        except FileNotFoundError as error:
+            raise HTTPException(status_code=404, detail=f"image not found: {error}") from error
+        except (OSError, ValueError, RuntimeError) as error:
+            raise HTTPException(status_code=422, detail=str(error)) from error
 
     @app.get("/metrics")
     def metrics() -> dict[str, Any]:

@@ -30,18 +30,23 @@
     "output_shape": [
       1,
       2
-    ]
+    ],
+    "training_rows": 35437,
+    "ranking_rows": 12555,
+    "batch_size": 128,
+    "amp": true
   },
   "image_split_counts": {
-    "development": 43193,
-    "ranking": 4799
+    "development": 35437,
+    "ranking": 12555
   },
   "demo_events": 3,
   "api": {
     "health": 200,
     "events": 200,
     "metrics": 200,
-    "predict": 200
+    "predict": 200,
+    "verify_image": 200
   },
   "ranking_promotion": "blocked_pending_authoritative_labels"
 }

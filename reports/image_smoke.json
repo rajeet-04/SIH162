@@ -4,7 +4,10 @@
   "cuda_version": "13.0",
   "device": "cuda",
   "gpu": "NVIDIA GeForce RTX 5050 Laptop GPU",
-  "training_rows": 128,
+  "training_rows": 35437,
+  "batch_size": 128,
+  "amp": true,
+  "num_workers": 2,
   "epochs": 1,
   "ranking_rows_used": 0,
   "cpu_export": "models/image-smoke/image_verifier.ts",
@@ -12,6 +15,6 @@
     1,
     2
   ],
-  "loss_final": 0.13492953777313232,
-  "ranking_rows": 4799
+  "loss_final": 0.007716496009379625,
+  "ranking_rows": 12555
 }

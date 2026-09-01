@@ -20,3 +20,9 @@ export type MetricsResponse = {
   stage2?: Record<string, number>;
   ranking_promotion?: string;
 };
+export type HealthResponse = {
+  status?: string;
+  model_version?: string;
+  image_verifier_loaded?: boolean;
+  image_verifier_device?: string;
+};

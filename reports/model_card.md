@@ -17,8 +17,14 @@ decision system.
   industrial/flare proximity. 7,930 rows remain review-required and 1,256 are
   eligible for supervised training.
 - The image verifier uses 47,992 readable Fire/No_Fire images from the local
-  Training and Test folders. It is a bounded ResNet18 smoke model, not yet a
-  production satellite-image classifier.
+  Training and Test folders. The official Test set and a deterministic grouped
+  10% holdout are excluded from training, leaving 35,437 development images and
+  12,555 ranking rows. It is a ResNet18 verifier, not yet a production
+  satellite-image classifier.
+- The 288.85GB MiCASA 3-hourly/daily archive is environmental flux data with
+  no fire-class label alignment to the prepared event period. It is retained
+  for a future environmental-context model and was not incorrectly consumed as
+  fire-classifier training data.
 
 ## Training and leakage controls
 
@@ -32,9 +38,10 @@ is enforced for image records.
 ## Current artifacts
 
 Stage 1 and Stage 2 are calibrated CatBoost classifiers. Each currently has
-739 fit rows, 185 calibration rows, and `ranking_rows_used=0`. The image smoke
-verifier was trained for one epoch on 128 balanced-shuffled examples using
-CUDA Torch on the available RTX 5050 Laptop GPU and exported as CPU-loadable
+739 fit rows, 185 calibration rows, and `ranking_rows_used=0`. The image
+verifier was trained for one epoch on all 35,437 development images with batch
+size 128, AMP, and two data-loader workers using CUDA Torch on the available
+RTX 5050 Laptop GPU. It was exported as CPU-loadable
 TorchScript for the offline demo.
 
 ## Evaluation and limitations

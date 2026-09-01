@@ -18,6 +18,7 @@ from thermis.splits import (
     assert_ranking_is_newest,
     make_grouped_time_split,
 )
+from thermis.training import train_tabular
 
 app = typer.Typer(help="SIH26162 data and model pipeline")
 
@@ -136,7 +137,10 @@ def build_features(
 ) -> None:
     """Build point-in-time persistence features for normalized events."""
     frame = pd.read_parquet(events)
-    features = build_event_features(frame)
+    settings = load_settings(Path("config/sources.yaml"))
+    flare_path = settings.sources["flaresat"] / "sources" / "flare" / "gas_flaring_points.csv"
+    flare_points = pd.read_csv(flare_path) if flare_path.exists() else None
+    features = build_event_features(frame, {"flare_points": flare_points})
     destination = Path(output)
     destination.parent.mkdir(parents=True, exist_ok=True)
     features.to_parquet(destination, index=False)
@@ -163,3 +167,24 @@ def make_splits(
     digest = sha256(target.read_bytes()).hexdigest()
     Path(f"{target}.sha256").write_text(f"{digest}  {target.name}\n", encoding="ascii")
     typer.echo(f"wrote {len(split)} split rows to {target}")
+
+
+@app.command("train-tabular")
+def train_tabular_command(
+    features: str = "data/features/event_features.parquet",
+    splits: str = "data/splits/event_splits.parquet",
+    output: str = "models/tabular",
+) -> None:
+    """Train Stage 1 and Stage 2 CatBoost models on development rows only."""
+    feature_frame = pd.read_parquet(features)
+    split_frame = pd.read_parquet(splits)[["event_id", "split"]]
+    frame = feature_frame.merge(split_frame, on="event_id", validate="one_to_one")
+    if "label_stage_1" not in frame.columns:
+        labels = pd.read_parquet("data/labels/events_labeled.parquet")
+        label_columns = ["event_id", "label_stage_1", "label_stage_2", "supervised_eligible"]
+        frame = frame.merge(labels[label_columns], on="event_id", validate="one_to_one")
+    bundles = train_tabular(frame, Path(output))
+    typer.echo(
+        f"stage1_rows={bundles['stage1']['training_rows']} "
+        f"stage2_rows={bundles['stage2']['training_rows']} ranking_rows_used=0"
+    )

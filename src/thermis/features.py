@@ -13,6 +13,8 @@ FEATURE_COLUMNS: Final[tuple[str, ...]] = (
     "prior_detections_30d",
     "prior_detections_90d",
     "stationary_count_90d",
+    "nearest_flare_distance_m",
+    "nearest_industrial_distance_m",
 )
 
 
@@ -64,10 +66,23 @@ def add_persistence_features(
 
 def build_event_features(events: pd.DataFrame, context: object | None = None) -> pd.DataFrame:
     """Build the fixed MVP feature set and preserve feature-time provenance."""
-    del context
     result = add_persistence_features(events)
     for column in ("frp", "brightness_temperature", "frp_uncertainty"):
         if column not in result:
             result[column] = np.nan
     result["feature_as_of_utc"] = pd.to_datetime(result["timestamp_utc"], utc=True)
+    result["nearest_flare_distance_m"] = np.nan
+    result["nearest_industrial_distance_m"] = np.nan
+    if isinstance(context, dict) and isinstance(context.get("flare_points"), pd.DataFrame):
+        points = context["flare_points"]
+        valid = points[["latitude", "longitude"]].dropna()
+        point_lat = valid["latitude"].to_numpy(dtype=float)
+        point_lon = valid["longitude"].to_numpy(dtype=float)
+        for index, row in result.iterrows():
+            distances = _distance_km(
+                float(row["latitude"]), float(row["longitude"]), point_lat, point_lon
+            )
+            nearest_m = float(np.min(distances) * 1000) if len(distances) else np.nan
+            result.at[index, "nearest_flare_distance_m"] = nearest_m
+            result.at[index, "nearest_industrial_distance_m"] = nearest_m
     return result

@@ -18,7 +18,12 @@ def _timestamp_to_utc(value: Any) -> pd.Timestamp:
         number = float(value)
         if 60_000 <= number <= 1_000_000:
             return matlab_datenum_to_utc(number)
-        unit = "ns" if abs(number) >= 1e14 else "ms"
+        if abs(number) >= 1e17:
+            unit = "ns"
+        elif abs(number) >= 1e11:
+            unit = "us"
+        else:
+            unit = "ms"
         return pd.to_datetime(number, unit=unit, utc=True)
     return pd.to_datetime(value, utc=True)
 
@@ -46,6 +51,8 @@ def normalize_frp_frame(raw: pd.DataFrame, source_name: str) -> pd.DataFrame:
             "source_file": source_file,
             "reject_reason": None,
         }
+        for key, value in row.items():
+            record.setdefault(key, value)
         try:
             record["timestamp_utc"] = _timestamp_to_utc(row["time"])
             event = ThermalEvent.model_validate(record)
@@ -57,7 +64,7 @@ def normalize_frp_frame(raw: pd.DataFrame, source_name: str) -> pd.DataFrame:
 
 
 def read_frp_events(path: Path) -> pd.DataFrame:
-    return normalize_frp_frame(pd.read_csv(path), source_name="frp")
+    return normalize_frp_frame(pd.read_csv(path), source_name=f"frp:{path.stem}")
 
 
 def read_flare_points(path: Path) -> pd.DataFrame:

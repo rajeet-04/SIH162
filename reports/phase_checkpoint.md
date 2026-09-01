@@ -1,7 +1,7 @@
 # SIH26162 phase checkpoint
 
 Branch: `feature/sih26162-mvp`  
-Latest commit: `c64f042 feat: complete dashboard investigation journey`
+Latest commit: `574d8aa docs: refresh final checkpoint`
 
 ## Exit evidence
 

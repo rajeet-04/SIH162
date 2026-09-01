@@ -8,6 +8,7 @@ import typer
 from thermis.adapters.environmental import build_environment_manifest
 from thermis.adapters.fire_atlas import build_fire_atlas_manifest
 from thermis.adapters.structured import read_frp_events
+from thermis.api import ModelRuntime, create_app
 from thermis.config import load_settings
 from thermis.features import build_event_features
 from thermis.images import build_image_manifest
@@ -188,3 +189,18 @@ def train_tabular_command(
         f"stage1_rows={bundles['stage1']['training_rows']} "
         f"stage2_rows={bundles['stage2']['training_rows']} ranking_rows_used=0"
     )
+
+
+@app.command("serve")
+def serve(
+    demo: bool = typer.Option(False, help="Run the offline demo mode."),
+    host: str = "127.0.0.1",
+    port: int = 8000,
+) -> None:
+    """Serve the loaded tabular model and API contracts."""
+    import uvicorn
+
+    runtime = ModelRuntime.from_paths(Path("models/tabular"))
+    if demo:
+        runtime.model_version = "tabular-local-0.1-offline"
+    uvicorn.run(create_app(runtime), host=host, port=port)

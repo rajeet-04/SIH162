@@ -33,7 +33,7 @@
     ],
     "training_rows": 35437,
     "ranking_rows": 12555,
-    "batch_size": 128,
+    "batch_size": 320,
     "amp": true
   },
   "image_split_counts": {

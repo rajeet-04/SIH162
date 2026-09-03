@@ -39,10 +39,11 @@ is enforced for image records.
 
 Stage 1 and Stage 2 are calibrated CatBoost classifiers. Each currently has
 739 fit rows, 185 calibration rows, and `ranking_rows_used=0`. The image
-verifier was trained for one epoch on all 35,437 development images with batch
-size 128, AMP, and two data-loader workers using CUDA Torch on the available
-RTX 5050 Laptop GPU. It was exported as CPU-loadable
-TorchScript for the offline demo.
+ verifier was trained for twelve epochs on all 35,437 development images with batch
+ size 320, AMP, and two data-loader workers using CUDA Torch on the available
+ RTX 5050 Laptop GPU (peak ~7.0GB of 8.15GB VRAM, 100% compute utilization).
+ It was exported as CPU-loadable
+ TorchScript for the offline demo.
 
 ## Evaluation and limitations
 

@@ -1,0 +1,12 @@
+{
+  "fit_patches": 1458,
+  "val_patches": 504,
+  "holdout_patches": 504,
+  "best_epoch": 1,
+  "val_dice_best": 0.0684443139025864,
+  "holdout_dice": 0.10763577911420336,
+  "holdout_iou": 0.057532676522682985,
+  "holdout_pixel_accuracy": 0.05776553683810764,
+  "input": "12ch_128px_s2_reflectance",
+  "device": "cuda"
+}

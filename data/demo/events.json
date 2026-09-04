@@ -1,17 +1,17 @@
 {
   "demo-industrial-fire": {
     "event_id": "demo-industrial-fire",
-    "latitude": 24.48854293817237,
-    "longitude": 48.18568987834283,
+    "latitude": 29.90999,
+    "longitude": 74.94506,
     "prediction": {
       "final_class": "industrial_fire_candidate",
       "confidence": 0.72,
       "model_version": "tabular-local-0.1-demo"
     },
     "evidence": {
-      "frp": 2.016931199429281,
-      "prior_detections_90d": 9,
-      "nearest_flare_distance_m": 1227.3648526918714,
+      "frp": 13.22,
+      "prior_detections_90d": 0,
+      "nearest_flare_distance_m": 559.0279134788818,
       "label_source": "industrial_proximity"
     },
     "timeline_90d": [
@@ -21,31 +21,31 @@
       },
       {
         "days_ago": 30,
-        "prior_detections": 9
+        "prior_detections": 0
       },
       {
         "days_ago": 7,
-        "prior_detections": 9
+        "prior_detections": 0
       },
       {
         "days_ago": 0,
-        "frp": 2.016931199429281
+        "frp": 13.22
       }
     ]
   },
   "demo-persistent-heat": {
     "event_id": "demo-persistent-heat",
-    "latitude": 24.48354993818498,
-    "longitude": 48.17891987835992,
+    "latitude": 29.47193,
+    "longitude": 76.86103,
     "prediction": {
       "final_class": "persistent_industrial_heat_or_flare",
       "confidence": 0.9,
       "model_version": "tabular-local-0.1-demo"
     },
     "evidence": {
-      "frp": 2.019222009400393,
-      "prior_detections_90d": 13,
-      "nearest_flare_distance_m": 659.6177000689479,
+      "frp": 3.16,
+      "prior_detections_90d": 12,
+      "nearest_flare_distance_m": 504.62841662912484,
       "label_source": "known_flare_and_persistence"
     },
     "timeline_90d": [
@@ -55,31 +55,31 @@
       },
       {
         "days_ago": 30,
-        "prior_detections": 13
+        "prior_detections": 12
       },
       {
         "days_ago": 7,
-        "prior_detections": 13
+        "prior_detections": 12
       },
       {
         "days_ago": 0,
-        "frp": 2.019222009400393
+        "frp": 3.16
       }
     ]
   },
   "demo-uncertain": {
     "event_id": "demo-uncertain",
-    "latitude": 6.821228982778052,
-    "longitude": -58.37646585261359,
+    "latitude": 30.87475,
+    "longitude": 82.85634,
     "prediction": {
       "final_class": "uncertain_review_required",
       "confidence": 0.4,
       "model_version": "tabular-local-0.1-demo"
     },
     "evidence": {
-      "frp": 9.02751594412082,
+      "frp": 7.01,
       "prior_detections_90d": 0,
-      "nearest_flare_distance_m": 375637.47721767833,
+      "nearest_flare_distance_m": 574225.1340489743,
       "label_source": "insufficient_evidence"
     },
     "timeline_90d": [
@@ -97,7 +97,7 @@
       },
       {
         "days_ago": 0,
-        "frp": 9.02751594412082
+        "frp": 7.01
       }
     ]
   }

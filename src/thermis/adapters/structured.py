@@ -52,6 +52,8 @@ def normalize_frp_frame(raw: pd.DataFrame, source_name: str) -> pd.DataFrame:
             "reject_reason": None,
         }
         for key, value in row.items():
+            if key == "time":
+                continue  # raw source clock; timestamp_utc is canonical
             record.setdefault(key, value)
         try:
             record["timestamp_utc"] = _timestamp_to_utc(row["time"])

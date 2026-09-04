@@ -19,10 +19,10 @@ ROOT = Path(__file__).resolve().parents[1]
 def main() -> None:
     features = pd.read_parquet(ROOT / "data/features/event_features.parquet")
     splits = pd.read_parquet(ROOT / "data/splits/event_splits.parquet")
-    if len(features) != 9186 or len(splits) != 9186:
-        raise SystemExit("unexpected prepared event row count")
     split_counts = splits["split"].value_counts().to_dict()
-    if split_counts.get("development") != 8267 or split_counts.get("ranking") != 919:
+    if len(features) != len(splits) or len(features) == 0:
+        raise SystemExit("unexpected prepared event row count")
+    if split_counts.get("ranking", 0) <= 0 or split_counts.get("development", 0) <= 0:
         raise SystemExit(f"unexpected split counts: {split_counts}")
     image_splits = pd.read_parquet(ROOT / "data/splits/image_splits.parquet")
     image_split_counts = image_splits["split"].value_counts().to_dict()

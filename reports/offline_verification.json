@@ -1,26 +1,26 @@
 {
   "offline": true,
-  "event_rows": 9186,
+  "event_rows": 12165,
   "split_counts": {
-    "development": 8267,
-    "ranking": 919
+    "development": 10948,
+    "ranking": 1217
   },
   "tabular_bundles": {
     "stage1": {
-      "fit_rows": 739,
-      "calibration_rows": 185,
+      "fit_rows": 1022,
+      "calibration_rows": 256,
       "metrics": {
-        "macro_f1": 1.0,
-        "recall": 1.0
+        "macro_f1": 0.9914751914751915,
+        "recall": 0.9939759036144578
       },
       "model": "CalibratedClassifierCV"
     },
     "stage2": {
-      "fit_rows": 739,
-      "calibration_rows": 185,
+      "fit_rows": 1022,
+      "calibration_rows": 256,
       "metrics": {
-        "macro_f1": 1.0,
-        "recall": 1.0
+        "macro_f1": 0.9914751914751915,
+        "recall": 0.9939759036144578
       },
       "model": "CalibratedClassifierCV"
     }

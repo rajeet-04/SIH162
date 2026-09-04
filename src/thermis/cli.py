@@ -129,6 +129,8 @@ def prepare_events(
     if not frames:
         raise typer.BadParameter(f"no CSV files found under {roots}")
     combined = pd.concat(frames, ignore_index=True)
+    for column in combined.select_dtypes(include="object"):
+        combined[column] = combined[column].astype("string")
     destination = Path(output)
     reject_path = Path(rejects)
     destination.parent.mkdir(parents=True, exist_ok=True)

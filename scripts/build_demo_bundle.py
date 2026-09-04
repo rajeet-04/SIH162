@@ -18,7 +18,8 @@ def build_demo_bundle(
         match = frame[frame["label_stage_2"] == label]
         if match.empty:
             continue
-        row = match.iloc[0]
+        india = match[match["latitude"].between(6, 38) & match["longitude"].between(66, 100)]
+        row = (india if not india.empty else match).iloc[0]
         selected.append(
             {
                 "event_id": demo_id,

@@ -1,11 +1,11 @@
 {
-  "ranking_rows": 919,
+  "ranking_rows": 1217,
   "authoritative_label_rows": 0,
   "metrics": {
     "industrial_fire_recall": 0.0,
     "macro_f1": 0.0,
     "persistent_false_alert_rate": 0.0,
-    "cpu_latency_ms_p95": 0.06180734493646766,
+    "cpu_latency_ms_p95": 0.04143142974280696,
     "severe_segment_collapse": true
   },
   "promoted": false,

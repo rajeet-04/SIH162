@@ -9,12 +9,13 @@ decision system.
 
 ## Data and labels
 
-- Canonical event table: 9,186 accepted rows from the prepared structured event
-  sources; 6 malformed rows were rejected.
+- Canonical event table: 12,165 accepted rows (9,186 archival + 2,979 live FIRMS
+  India detections, of which 2,860 fall in the India window); 6 malformed rows
+  were rejected.
 - Supporting sources are tracked in `config/sources.yaml` and the generated
   manifests. Gas-flaring facility points are used for proximity features.
 - Labels are conservative, rule-derived candidates using persistence and
-  industrial/flare proximity. 7,930 rows remain review-required and 1,256 are
+  industrial/flare proximity. 10,847 rows remain review-required and 1,318 are
   eligible for supervised training.
 - The image verifier uses 47,992 readable Fire/No_Fire images from the local
   Training and Test folders. The official Test set and a deterministic grouped
@@ -29,7 +30,7 @@ decision system.
 ## Training and leakage controls
 
 The newest 10% of whole event time groups is reserved as the untouched ranking
-set: 8,267 development rows and 919 ranking rows. Ranking rows are excluded
+set: 10,948 development rows and 1,217 ranking rows. Ranking rows are excluded
 from fitting, calibration, threshold selection, and demo construction. Inside
 development, the tabular estimator fits on the oldest 80% of eligible rows and
 uses the later 20% for sigmoid calibration diagnostics. Scene-group isolation
@@ -38,7 +39,7 @@ is enforced for image records.
 ## Current artifacts
 
 Stage 1 and Stage 2 are calibrated CatBoost classifiers. Each currently has
-739 fit rows, 185 calibration rows, and `ranking_rows_used=0`. Baseline comparison
+1,022 fit rows, 256 calibration rows, and `ranking_rows_used=0`. Baseline comparison
 (`reports/baseline_comparison.json`): logreg 0.75 vs RF/HGB/CatBoost 1.0
 macro-F1 — tree models tie at the ceiling because labels are rule-derived, so
 CatBoost is retained for calibrated probabilities, not an accuracy edge. The shipped image

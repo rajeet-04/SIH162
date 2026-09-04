@@ -30,7 +30,7 @@ selection.
 .venv\Scripts\thermis.exe build-features
 .venv\Scripts\thermis.exe make-splits
 .venv\Scripts\thermis.exe train-tabular
-.venv\Scripts\thermis.exe train-image --epochs 1 --batch-size 128 --max-records 0
+.venv\Scripts\thermis.exe train-image --epochs 8 --batch-size 320 --max-records 0 --val-fraction 0.1 --weight-decay 0.0001 --augment
 .venv\Scripts\thermis.exe evaluate-ranking
 
 # Run the dashboard in another terminal
@@ -43,8 +43,8 @@ bun run dev
 
 `train-image` uses CUDA automatically when `torch.cuda.is_available()` is true
 and exports a CPU-loadable TorchScript verifier. The current image model is a
- bounded smoke model. The running API loads that artifact automatically;
- `POST /verify-image` accepts a local image path for image verification, while
- `POST /predict` remains the calibrated tabular fusion decision path. See
- [reports/model_card.md](reports/model_card.md) for the evaluation status and
- limitations.
+bounded smoke model. The running API loads that artifact automatically;
+`POST /verify-image` accepts a local image path for image verification, while
+`POST /predict` remains the calibrated tabular fusion decision path. See
+[reports/model_card.md](reports/model_card.md) for the evaluation status and
+limitations.

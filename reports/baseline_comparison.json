@@ -1,0 +1,48 @@
+{
+  "seed": 26162,
+  "note": "rules baseline omitted: labels are rule outputs",
+  "stage1": {
+    "rows": [
+      {
+        "model": "random_forest",
+        "macro_f1": 1.0
+      },
+      {
+        "model": "hist_gbm",
+        "macro_f1": 1.0
+      },
+      {
+        "model": "catboost_shipped",
+        "macro_f1": 1.0
+      },
+      {
+        "model": "logreg",
+        "macro_f1": 0.7515549901046084
+      }
+    ],
+    "val_rows": 185,
+    "winner": "random_forest"
+  },
+  "stage2": {
+    "rows": [
+      {
+        "model": "random_forest",
+        "macro_f1": 1.0
+      },
+      {
+        "model": "hist_gbm",
+        "macro_f1": 1.0
+      },
+      {
+        "model": "catboost_shipped",
+        "macro_f1": 1.0
+      },
+      {
+        "model": "logreg",
+        "macro_f1": 0.7515549901046084
+      }
+    ],
+    "val_rows": 185,
+    "winner": "random_forest"
+  }
+}

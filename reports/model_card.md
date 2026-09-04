@@ -38,7 +38,10 @@ is enforced for image records.
 ## Current artifacts
 
 Stage 1 and Stage 2 are calibrated CatBoost classifiers. Each currently has
-739 fit rows, 185 calibration rows, and `ranking_rows_used=0`. The shipped image
+739 fit rows, 185 calibration rows, and `ranking_rows_used=0`. Baseline comparison
+(`reports/baseline_comparison.json`): logreg 0.75 vs RF/HGB/CatBoost 1.0
+macro-F1 — tree models tie at the ceiling because labels are rule-derived, so
+CatBoost is retained for calibrated probabilities, not an accuracy edge. The shipped image
 verifier is a ResNet18 trained with grouped dev-val early stopping (31,893 fit
 + 3,544 dev-val rows, batch 320, AMP, augmentation, weight decay 1e-4 on the
 RTX 5050; best epoch 4 of 8, dev-val NLL 0.86) and exported as CPU-loadable

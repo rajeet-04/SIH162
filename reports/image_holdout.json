@@ -1,0 +1,13 @@
+{
+  "holdout_rows": 12555,
+  "evaluated_rows": 12555,
+  "skipped_rows": 0,
+  "accuracy": 0.6648347272003186,
+  "per_class_recall": {
+    "fire": 0.7771543985637342,
+    "no_fire": 0.39006313477902826
+  },
+  "mean_confidence": 0.9102505324656913,
+  "expected_calibration_error_10bin": 0.24541580526537268,
+  "ranking_rows_used_for_training": 0
+}

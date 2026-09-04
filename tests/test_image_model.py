@@ -1,6 +1,11 @@
 import pandas as pd
 
-from thermis.image_model import ImageRecord, assert_scene_isolation, assign_image_splits
+from thermis.image_model import (
+    ImageRecord,
+    _grouped_dev_val_split,
+    assert_scene_isolation,
+    assign_image_splits,
+)
 
 
 def test_scene_isolation_rejects_cross_split_scene() -> None:
@@ -33,3 +38,17 @@ def test_image_split_keeps_scene_groups_together() -> None:
     split = assign_image_splits(frame, ranking_fraction=0.34)
     assert split.groupby("scene_group")["split"].nunique().max() == 1
     assert set(split["split"]) == {"development", "ranking"}
+
+
+def test_grouped_dev_val_split_isolates_newest_groups() -> None:
+    records = [
+        ImageRecord(f"id{i}", f"scene-{g}", "development", "fire", f"{i}.jpg")
+        for g in range(4)
+        for i in range(g * 2, g * 2 + 2)
+    ]
+    fit, val = _grouped_dev_val_split(records, 0.25)
+    fit_groups = {record.scene_group for record in fit}
+    val_groups = {record.scene_group for record in val}
+    assert fit_groups.isdisjoint(val_groups)
+    assert val_groups == {"scene-3"}
+    assert len(fit) == 6 and len(val) == 2

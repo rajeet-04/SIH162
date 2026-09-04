@@ -231,6 +231,9 @@ def train_image(
     epochs: int = 1,
     max_records: int = 0,
     batch_size: int = 16,
+    val_fraction: float = 0.0,
+    weight_decay: float = 0.0,
+    augment: bool = False,
 ) -> None:
     """Run the bounded CUDA image-verifier smoke train and export TorchScript."""
     frame = pd.read_parquet(manifest)
@@ -255,8 +258,12 @@ def train_image(
         epochs=epochs,
         max_records=None if max_records <= 0 else max_records,
         batch_size=batch_size,
+        val_fraction=val_fraction,
+        weight_decay=weight_decay,
+        augment=augment,
     )
     typer.echo(
         f"image_rows={metadata['training_rows']} device={metadata['device']} "
-        f"ranking_rows={metadata['ranking_rows']} ranking_rows_used={metadata['ranking_rows_used']}"
+        f"ranking={metadata['ranking_rows']} used={metadata['ranking_rows_used']} "
+        f"best_epoch={metadata.get('best_epoch')} val_nll={metadata.get('val_nll_best')}"
     )

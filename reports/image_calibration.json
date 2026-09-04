@@ -1,0 +1,7 @@
+{
+  "temperature": 0.9968152642250061,
+  "fit_rows": 2000,
+  "fit_split": "development_sample_only",
+  "nll_before": 1.3670531188836321e-05,
+  "nll_after": 1.3264004337543156e-05
+}

@@ -49,8 +49,11 @@ def main() -> None:
     image_metadata = json.loads(
         (ROOT / "models/image-smoke/metadata.json").read_text(encoding="utf-8")
     )
-    if image_metadata.get("training_rows") != 35437 or image_metadata.get("ranking_rows") != 12555:
+    dev_rows = image_metadata.get("training_rows", 0) + image_metadata.get("dev_val_rows", 0)
+    if dev_rows != 35437 or image_metadata.get("ranking_rows") != 12555:
         raise SystemExit(f"unexpected image training metadata: {image_metadata}")
+    if image_metadata.get("ranking_rows_used") != 0:
+        raise SystemExit(f"image bundle consumed ranking rows: {image_metadata}")
     image_output = image_model(torch.zeros(1, 3, 224, 224))
     if tuple(image_output.shape) != (1, 2):
         raise SystemExit(f"unexpected image verifier output shape: {tuple(image_output.shape)}")
@@ -100,6 +103,9 @@ def main() -> None:
             "device": "cpu",
             "output_shape": list(image_output.shape),
             "training_rows": image_metadata["training_rows"],
+            "dev_val_rows": image_metadata.get("dev_val_rows", 0),
+            "best_epoch": image_metadata.get("best_epoch"),
+            "val_nll_best": image_metadata.get("val_nll_best"),
             "ranking_rows": image_metadata["ranking_rows"],
             "batch_size": image_metadata["batch_size"],
             "amp": image_metadata["amp"],

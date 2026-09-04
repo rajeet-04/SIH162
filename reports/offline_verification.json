@@ -31,7 +31,10 @@
       1,
       2
     ],
-    "training_rows": 35437,
+    "training_rows": 31893,
+    "dev_val_rows": 3544,
+    "best_epoch": 4,
+    "val_nll_best": 0.8622820318148852,
     "ranking_rows": 12555,
     "batch_size": 320,
     "amp": true

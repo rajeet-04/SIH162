@@ -55,11 +55,13 @@ Predict one of:
 
 Stage 2 provides source attribution. It does not override Stage 1 urgency without going through the calibrated decision layer.
 
+As-built limitation: shipped Stage 2 trains 2 classes (`industrial_fire_candidate`, `persistent_industrial_heat_or_flare`), not the 4 listed below. The wildfire rule branch is dead because `source_label`/`modis_burned_overlap` features were never built; only persistence + flare-proximity labels exist. The 4-class target requires MODIS/Fire Atlas enrichment plus expert labels (see `reports/review_queue.csv`).
+
 ### 3.3 Image Verifier
 
 The verifier supplies supporting evidence from a satellite patch. It cannot silently override the tabular decision engine. When the verifier and tabular model disagree materially, the decision layer emits `uncertain / review required` and exposes both probability distributions.
 
-The first image baseline uses transfer learning with EfficientNet-B0 or ConvNeXt-Tiny. U-Net segmentation is added only after mask alignment, class balance, and scene provenance pass quality checks. Training uses mixed precision and moderate image sizes compatible with the available NVIDIA GeForce RTX 5050 and approximately 8 GB VRAM.
+The first image baseline is a ResNet18 trained from scratch with grouped dev-val early stopping (as-built; transfer learning was specified but not used). U-Net segmentation was attempted and parked: fire pixels are 1.6% of patch data and smoke runs collapsed to background/all-fire extremes. Training uses mixed precision and moderate image sizes compatible with the available NVIDIA GeForce RTX 5050 and approximately 8 GB VRAM.
 
 ### 3.4 Future Model Work
 
@@ -69,7 +71,7 @@ An end-to-end multimodal neural network is deferred until the tabular and image 
 
 ### 4.1 Structured and Image Sources in `D:\data`
 
-- `csv_output/sentinel_frp_combined.csv`: 4,596 structured FRP records.
+- `csv_output/` FRP files: 9,186 accepted structured events from 6 CSVs (as-built; early estimate said 4,596).
 - Regional FRP files for the Amazon basin, Central Africa, China industrial areas, Gulf flaring, and Siberian wildfire cases.
 - `flaresat_github/dataset/flare_dataset.csv`: 7,337 flare examples.
 - `flaresat_github/dataset/fire_dataset.csv`: 265 fire examples.
@@ -86,7 +88,7 @@ An end-to-end multimodal neural network is deferred until the tabular and image 
 - `R:\MiCASA_FLUX`: monthly MiCASA NetCDF files.
 - `R:\MiCASA_FLUX_DAILY`: daily MiCASA NetCDF files.
 - `R:\MiCASA_FLUX_3H`: 3-hourly observations packaged as daily NetCDF files.
-- `D:\data\MCD64A1` and `D:\MCD64A1`: MODIS burned-area HDF files. Their relationship must be resolved by content manifest before either copy is used.
+- `D:/data/MCD64A1`: MODIS burned-area HDF files (as-built; `D:\MCD64A1` does not exist, so there was no duplicate copy to resolve).
 - `R:\Global_Fire_Atlas`: 154 GeoTIFF products and 28 zipped shapefile products covering 2003-2016. The ignition archives contain 13,250,145 fire records; perimeter archives contain 13,250,608 records with size, perimeter, start/end date, duration, expansion, fire line, speed, direction, land cover, and tile identity.
 
 Global Fire Atlas ignition and perimeter archives describe the same fire entities and are joined by year plus `fire_ID`; they are never stacked as independent training examples. Perimeter archives contain 463 additional records overall, so join coverage and unmatched identifiers are recorded. All 182 Global Fire Atlas data files have SHA-256 sidecars, and inventory verifies every checksum before use. Large rasters are processed with windowed reads and never loaded completely into memory.
@@ -266,6 +268,8 @@ Split image data by source scene, acquisition, and geography. Compare transfer-l
 
 Fuse calibrated tabular and image probabilities through an explicit weighted or meta-classifier layer trained on internal validation predictions. Record the contribution of each component. Material disagreement produces uncertainty rather than a forced class.
 
+As-built: fixed 0.8/0.2 tabular/image blend with hardcoded risk weights (`src/thermis/fusion.py`); no learned meta-layer exists, and `/predict` never receives image probabilities, so the disagreement path only applies where both evidence paths are explicitly combined.
+
 ## 12. Evaluation and Promotion
 
 Stage 1 metrics:
@@ -318,6 +322,8 @@ source provenance
 ```
 
 Risk is a policy layer separate from raw class probability. It combines calibrated actionable-fire probability, industrial-source probability, thermal severity, nearby infrastructure exposure, context completeness, and uncertainty. Risk thresholds are frozen from internal validation before final ranking evaluation.
+
+As-built: `/predict` returns fused class, confidence, risk score/band, review flag, and probabilities only — no per-stage breakdown, top-evidence features, or provenance fields. Risk thresholds are hardcoded in `src/thermis/fusion.py`, not `config/model.yaml`.
 
 ## 14. MVP Product Flow
 

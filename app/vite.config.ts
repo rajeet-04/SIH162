@@ -7,6 +7,10 @@ export default defineConfig({
     proxy: {
       "/events": { target: "http://127.0.0.1:8000", changeOrigin: true },
       "/metrics": { target: "http://127.0.0.1:8000", changeOrigin: true },
+      "/health": { target: "http://127.0.0.1:8000", changeOrigin: true },
+      "/predict": { target: "http://127.0.0.1:8000", changeOrigin: true },
+      "/timeline": { target: "http://127.0.0.1:8000", changeOrigin: true },
+      "/verify-image": { target: "http://127.0.0.1:8000", changeOrigin: true },
     },
   },
 });

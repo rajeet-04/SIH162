@@ -196,4 +196,61 @@ def create_app(runtime: ModelRuntime | Any | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="event not found")
         return {"event_id": event_id, "timeline_90d": value.get("timeline_90d", [])}
 
+    @app.get("/replay")
+    def replay(count: int = 50, cursor: int = 0, seed: int = 26162) -> dict[str, Any]:
+        """Stream real labeled events with live model verdicts (replay feed).
+
+        Rows come from the prepared event table in deterministic shuffled order;
+        each row is scored by the loaded tabular models at request time.
+        """
+        if active_runtime is None:
+            raise HTTPException(status_code=503, detail="model runtime is not loaded")
+        count = max(1, min(200, count))
+        table = pd.read_parquet(
+            Path("data/labels/events_labeled.parquet"),
+            columns=[
+                "event_id", "latitude", "longitude", "timestamp_utc", "frp",
+                "brightness_temperature", "frp_uncertainty", "prior_detections_7d",
+                "prior_detections_30d", "prior_detections_90d",
+                "nearest_flare_distance_m", "label_source",
+            ],
+        ).sample(frac=1.0, random_state=seed).reset_index(drop=True)
+        window = table.iloc[cursor : cursor + count]
+        items = [replay_item(active_runtime, row) for row in window.itertuples()]
+        return {"events": items, "total": len(table), "cursor": cursor, "count": len(items)}
+
     return app
+
+
+def replay_item(runtime: ModelRuntime | Any, row: Any) -> dict[str, Any]:
+    """Score one stored event row through the live tabular models."""
+    request = PredictionRequest(
+        latitude=float(row.latitude),
+        longitude=float(row.longitude),
+        timestamp_utc=pd.Timestamp(row.timestamp_utc).to_pydatetime(),
+        frp=float(row.frp or 0.0),
+        brightness_temperature=float(row.brightness_temperature or 0.0),
+        frp_uncertainty=float(row.frp_uncertainty or 0.0),
+    )
+    prediction = runtime.predict(request)
+    return {
+        "event_id": f"replay-{row.event_id}",
+        "latitude": float(row.latitude),
+        "longitude": float(row.longitude),
+        "prediction": prediction,
+        "evidence": {
+            "frp": float(row.frp or 0.0),
+            "prior_detections_7d": int(row.prior_detections_7d or 0),
+            "prior_detections_30d": int(row.prior_detections_30d or 0),
+            "prior_detections_90d": int(row.prior_detections_90d or 0),
+            "nearest_flare_distance_m": float(row.nearest_flare_distance_m or 0.0),
+            "label_source": str(row.label_source),
+        },
+        "timeline_90d": [
+            {"days_ago": 90, "prior_detections": 0},
+            {"days_ago": 30, "prior_detections": int(row.prior_detections_30d or 0)},
+            {"days_ago": 7, "prior_detections": int(row.prior_detections_7d or 0)},
+            {"days_ago": 0, "frp": float(row.frp or 0.0)},
+        ],
+        "replay": True,
+    }

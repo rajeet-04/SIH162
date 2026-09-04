@@ -1,5 +1,6 @@
 sources:
   structured: D:/data/csv_output
+  firms_india: D:/data/firms_india
   firesat: D:/data/firesat_1
   flaresat: D:/data/flaresat_github
   mcd64a1: D:/data/MCD64A1

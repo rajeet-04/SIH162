@@ -116,10 +116,18 @@ def prepare_events(
 ) -> None:
     """Normalize structured FRP CSV files and preserve rejected rows."""
     settings = load_settings(Path(config))
-    structured_root = settings.sources["structured"]
-    frames = [read_frp_events(path) for path in sorted(structured_root.glob("*.csv"))]
+    roots = [settings.sources["structured"]]
+    firms = settings.sources.get("firms_india")
+    if firms is not None and firms.exists():
+        roots.append(firms)
+    frames = [
+        read_frp_events(path)
+        for root in roots
+        for path in sorted(root.glob("*.csv"))
+        if not path.name.endswith("_raw.csv")
+    ]
     if not frames:
-        raise typer.BadParameter(f"no CSV files found under {structured_root}")
+        raise typer.BadParameter(f"no CSV files found under {roots}")
     combined = pd.concat(frames, ignore_index=True)
     destination = Path(output)
     reject_path = Path(rejects)

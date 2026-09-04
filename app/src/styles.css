@@ -65,6 +65,12 @@ h3 { color: var(--amber); font-size: 12px; text-transform: uppercase; letter-spa
 .map-panel, .evidence { border: 1px solid var(--line); background: var(--panel); min-height: 620px; }
 .panel-title { display: flex; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid var(--line); color: var(--dim); font-size: 11px; letter-spacing: .15em; }
 .map-surface { height: 470px; position: relative; overflow: hidden; display: grid; place-items: center; color: var(--faint); background: radial-gradient(circle at 60% 35%, #4d130d 0, transparent 26%), #120706; }
+.map-surface.live { display: block; }
+.osm-canvas { position: absolute; inset: 0; }
+.osm-canvas canvas { filter: invert(92%) hue-rotate(180deg) saturate(65%) brightness(96%) contrast(96%); }
+.maplibregl-ctrl-attrib { background: #0d0605cc !important; font-size: 9px !important; }
+.maplibregl-ctrl-attrib a { color: var(--dim) !important; }
+.map-surface.live .map-caption, .map-surface.live .map-help { z-index: 3; text-shadow: 0 1px 4px #000; }
 .map-caption { position: absolute; top: 16px; left: 18px; right: 18px; display: flex; justify-content: space-between; color: var(--warm); font-size: 10px; letter-spacing: .12em; }
 .map-caption span, .map-help { color: var(--faint); }
 .map-help { position: absolute; bottom: 14px; margin: 0; font-size: 11px; }

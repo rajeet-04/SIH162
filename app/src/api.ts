@@ -17,6 +17,7 @@ export type ThermisApi = {
   getMetrics?: () => Promise<MetricsResponse>;
   getHealth?: () => Promise<HealthResponse>;
   predict?: (request: PredictRequest) => Promise<PredictResponse>;
+  listReplay?: (count: number) => Promise<EventsResponse>;
 };
 
 export const api: ThermisApi = {
@@ -30,4 +31,5 @@ export const api: ThermisApi = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(request),
     }).then((response) => response.json()),
+  listReplay: (count) => fetch(`/replay?count=${count}`).then((response) => response.json()),
 };

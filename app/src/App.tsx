@@ -17,7 +17,12 @@ export function App({ service = api }: { service?: ThermisApi }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    service.listEvents().then((payload) => setEvents(payload.events)).catch(() => setError("API unavailable"));
+    service.listEvents().then((payload) => {
+      setEvents(payload.events);
+      service.listReplay?.(60).then((replay) =>
+        setEvents((prior) => [...prior, ...replay.events.filter((e) => !prior.some((p) => p.event_id === e.event_id))])
+      ).catch(() => undefined);
+    }).catch(() => setError("API unavailable"));
     service.getMetrics?.().then(setMetrics).catch(() => undefined);
     service.getHealth?.().then((payload) => setImageReady(payload.image_verifier_loaded === true)).catch(() => undefined);
   }, [service]);

@@ -1,6 +1,7 @@
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import pandas as pd
 from fastapi import FastAPI, HTTPException
@@ -10,19 +11,32 @@ from thermis.artifacts import load_bundle
 from thermis.features import FEATURE_COLUMNS
 from thermis.fusion import FusionInput, RiskPolicy, fuse_prediction
 from thermis.image_model import _image_tensor, inspect_image
+from thermis.weather import fetch_weather
 
 
 class PredictionRequest(BaseModel):
+    model_config = {"allow_inf_nan": False}
     latitude: float = Field(ge=-90, le=90)
     longitude: float = Field(ge=-180, le=180)
     timestamp_utc: datetime
     frp: float = Field(ge=0)
     brightness_temperature: float | None = None
     frp_uncertainty: float | None = Field(default=None, ge=0)
+    prior_detections_7d: int | None = Field(default=None, ge=0)
+    prior_detections_30d: int | None = Field(default=None, ge=0)
+    prior_detections_90d: int | None = Field(default=None, ge=0)
+    stationary_count_90d: int | None = Field(default=None, ge=0)
+    nearest_flare_distance_m: float | None = Field(default=None, ge=0)
+    nearest_industrial_distance_m: float | None = Field(default=None, ge=0)
 
 
 class ImageVerificationRequest(BaseModel):
     path: str = Field(min_length=1)
+
+
+class ReviewRequest(BaseModel):
+    decision: Literal["confirmed", "dismissed", "needs_investigation"]
+    note: str = Field(default="", max_length=2000)
 
 
 class ModelRuntime:
@@ -74,14 +88,14 @@ class ModelRuntime:
         )
 
     def predict(self, request: PredictionRequest) -> dict[str, Any]:
-        values = {column: 0.0 for column in FEATURE_COLUMNS}
-        values.update(
-            latitude=request.latitude,
-            longitude=request.longitude,
-            frp=request.frp,
-            brightness_temperature=request.brightness_temperature or 0.0,
-            frp_uncertainty=request.frp_uncertainty or 0.0,
-        )
+        values = {
+            column: (
+                getattr(request, column, None)
+                if getattr(request, column, None) is not None
+                else float("nan")
+            )
+            for column in FEATURE_COLUMNS
+        }
         features = pd.DataFrame([values])[self.stage2["feature_columns"]]
         stage1_model = self.stage1["model"]
         stage2_model = self.stage2["model"]
@@ -100,7 +114,7 @@ class ModelRuntime:
                     str(key): float(value) for key, value in stage2_probabilities.items()
                 },
                 thermal_severity=min(1.0, request.frp / 100.0),
-                context_completeness=0.8,
+                context_completeness=sum(pd.notna(v) for v in values.values()) / len(values),
             ),
             RiskPolicy(),
         )
@@ -109,7 +123,7 @@ class ModelRuntime:
             "confidence": fused.confidence,
             "risk_score": fused.risk_score,
             "risk_level": fused.risk_level,
-            "review_required": fused.review_required,
+            "review_required": fused.review_required or any(pd.isna(v) for v in values.values()),
             "probabilities": fused.probabilities,
             "model_version": self.model_version,
         }
@@ -142,8 +156,16 @@ class ModelRuntime:
         }
 
 
-def create_app(runtime: ModelRuntime | Any | None = None) -> FastAPI:
-    app = FastAPI(title="THERMIS SIH26162", version="0.1.0")
+def create_app(runtime: ModelRuntime | Any | None = None, monitor=None) -> FastAPI:
+    @asynccontextmanager
+    async def lifespan(app):
+        if monitor:
+            monitor.start()
+        yield
+        if monitor:
+            monitor.stop()
+
+    app = FastAPI(title="THERMIS SIH26162", version="0.2.0", lifespan=lifespan)
     active_runtime = runtime
 
     @app.get("/health")
@@ -154,25 +176,78 @@ def create_app(runtime: ModelRuntime | Any | None = None) -> FastAPI:
             "offline_demo": bool(getattr(active_runtime, "demo", {})),
             "image_verifier_loaded": bool(getattr(active_runtime, "image_model", None)),
             "image_verifier_device": "cpu",
+            "ingestion": monitor.status() if monitor else {"enabled": False, "mode": "offline"},
         }
 
     @app.get("/events")
     def events() -> dict[str, Any]:
+        if monitor:
+            return {"events": monitor.store.events(), "mode": "live", "ingestion": monitor.status()}
         demo = getattr(active_runtime, "demo", {})
-        return {"events": list(demo.values())}
+        return {"events": list(demo.values()), "mode": "offline"}
 
     @app.get("/events/{event_id}")
     def event(event_id: str) -> dict[str, Any]:
-        value = active_runtime.event(event_id) if active_runtime else None
+        value = (
+            monitor.store.event(event_id)
+            if monitor
+            else (active_runtime.event(event_id) if active_runtime else None)
+        )
         if value is None:
             raise HTTPException(status_code=404, detail="event not found")
         return value
+
+    @app.get("/ingestion/status")
+    def ingestion_status():
+        return monitor.status() if monitor else {"enabled": False, "mode": "offline"}
+
+    @app.get("/events/{event_id}/evidence")
+    def evidence(event_id: str):
+        return event(event_id).get("evidence", {})
+
+    @app.post("/events/{event_id}/review")
+    def review(event_id: str, request: ReviewRequest):
+        from thermis.live import utcnow
+
+        if not monitor:
+            raise HTTPException(409, "Reviews require live mode")
+        value = dict(request.model_dump(), reviewed_at_utc=utcnow().isoformat())
+        if not monitor.store.review(event_id, value):
+            raise HTTPException(404, "event not found")
+        return {"review": value}
+
+    @app.get("/events/{event_id}/context/{source}")
+    def context(event_id: str, source: Literal["weather", "osm", "nasa"]):
+        from thermis.enrichment import osm_evidence, satellite_evidence
+        from thermis.live import utcnow
+
+        value = event(event_id)
+        lat, lon = value["latitude"], value["longitude"]
+        try:
+            if source == "weather":
+                return fetch_weather(lat, lon).as_dict()
+            if source == "osm":
+                return osm_evidence(lat, lon, str(utcnow().date()))
+            return satellite_evidence(
+                lat, lon, value.get("timestamp_utc", utcnow().isoformat())[:10]
+            )
+        except Exception:
+            raise HTTPException(503, f"{source} evidence unavailable; retry later") from None
 
     @app.post("/predict")
     def predict(request: PredictionRequest) -> dict[str, Any]:
         if active_runtime is None:
             raise HTTPException(status_code=503, detail="model runtime is not loaded")
         return {"prediction": active_runtime.predict(request)}
+
+    @app.get("/weather")
+    def weather(latitude: float, longitude: float) -> dict[str, Any]:
+        if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+            raise HTTPException(status_code=422, detail="invalid coordinates")
+        try:
+            return {"weather": fetch_weather(latitude, longitude).as_dict()}
+        except (OSError, ValueError, TimeoutError) as error:
+            raise HTTPException(status_code=503, detail=f"weather unavailable: {error}") from error
 
     @app.post("/verify-image")
     def verify_image(request: ImageVerificationRequest) -> dict[str, Any]:
@@ -191,10 +266,27 @@ def create_app(runtime: ModelRuntime | Any | None = None) -> FastAPI:
 
     @app.get("/timeline/{event_id}")
     def timeline(event_id: str) -> dict[str, Any]:
-        value = active_runtime.event(event_id) if active_runtime else None
+        value = (
+            monitor.store.event(event_id)
+            if monitor
+            else (active_runtime.event(event_id) if active_runtime else None)
+        )
         if value is None:
             raise HTTPException(status_code=404, detail="event not found")
-        return {"event_id": event_id, "timeline_90d": value.get("timeline_90d", [])}
+        return {
+            "event_id": event_id,
+            "timeline_90d": monitor.store.timeline(value)
+            if monitor
+            else value.get("timeline_90d", []),
+            "scope": (
+                "Observed counts within 5 km; 90 preceding UTC dates fetched for all four "
+                "products; current day provisional"
+                if monitor.store.coverage(value["timestamp_utc"])["complete"]
+                else "Observed daily satellite counts within 5 km; incomplete local history"
+            )
+            if monitor
+            else "offline fixture",
+        }
 
     @app.get("/replay")
     def replay(count: int = 50, cursor: int = 0, seed: int = 26162) -> dict[str, Any]:
@@ -206,15 +298,27 @@ def create_app(runtime: ModelRuntime | Any | None = None) -> FastAPI:
         if active_runtime is None:
             raise HTTPException(status_code=503, detail="model runtime is not loaded")
         count = max(1, min(200, count))
-        table = pd.read_parquet(
-            Path("data/labels/events_labeled.parquet"),
-            columns=[
-                "event_id", "latitude", "longitude", "timestamp_utc", "frp",
-                "brightness_temperature", "frp_uncertainty", "prior_detections_7d",
-                "prior_detections_30d", "prior_detections_90d",
-                "nearest_flare_distance_m", "label_source",
-            ],
-        ).sample(frac=1.0, random_state=seed).reset_index(drop=True)
+        table = (
+            pd.read_parquet(
+                Path("data/labels/events_labeled.parquet"),
+                columns=[
+                    "event_id",
+                    "latitude",
+                    "longitude",
+                    "timestamp_utc",
+                    "frp",
+                    "brightness_temperature",
+                    "frp_uncertainty",
+                    "prior_detections_7d",
+                    "prior_detections_30d",
+                    "prior_detections_90d",
+                    "nearest_flare_distance_m",
+                    "label_source",
+                ],
+            )
+            .sample(frac=1.0, random_state=seed)
+            .reset_index(drop=True)
+        )
         window = table.iloc[cursor : cursor + count]
         items = [replay_item(active_runtime, row) for row in window.itertuples()]
         return {"events": items, "total": len(table), "cursor": cursor, "count": len(items)}

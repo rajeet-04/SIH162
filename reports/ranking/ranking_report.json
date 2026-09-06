@@ -5,7 +5,7 @@
     "industrial_fire_recall": 0.0,
     "macro_f1": 0.0,
     "persistent_false_alert_rate": 0.0,
-    "cpu_latency_ms_p95": 0.04143142974280696,
+    "cpu_latency_ms_p95": 0.04046758422346558,
     "severe_segment_collapse": true
   },
   "promoted": false,

@@ -1,4 +1,9 @@
 .worktrees/
+.env
+.env.*
+!.env.example
+data/live/
+data/secrets/
 
 # Python
 .venv/
@@ -19,6 +24,7 @@ reports/generated/
 
 # Frontend
 app/node_modules/
+app/.wrangler/
 app/dist/
 app/.bun-cache/
 app/.bun-tmp/
@@ -30,3 +36,4 @@ app/test-results/
 .playwright-cli/
 
 reports/ranking/
+app/.output

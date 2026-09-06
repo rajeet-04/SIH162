@@ -206,17 +206,30 @@ def train_tabular_command(
 @app.command("serve")
 def serve(
     demo: bool = typer.Option(False, help="Run the offline demo mode."),
+    live: bool = typer.Option(False, help="Continuously ingest and classify FIRMS observations."),
+    poll_seconds: int = typer.Option(300, min=60),
     host: str = "127.0.0.1",
     port: int = 8000,
 ) -> None:
     """Serve the loaded tabular model and API contracts."""
     import uvicorn
+    from dotenv import load_dotenv
+
+    load_dotenv(override=False)
+
+    if demo and live:
+        raise typer.BadParameter("Choose either --demo or --live")
 
     demo_path = Path("data/demo/events.json") if demo else None
     runtime = ModelRuntime.from_paths(Path("models/tabular"), demo_path=demo_path)
     if demo:
         runtime.model_version = "tabular-local-0.1-offline"
-    uvicorn.run(create_app(runtime), host=host, port=port)
+    monitor = None
+    if live:
+        from thermis.live import EventStore, LiveMonitor, map_key
+        map_key()  # fail clearly before starting if credentials are absent
+        monitor = LiveMonitor(runtime, EventStore("data/live/events.sqlite3"), poll_seconds)
+    uvicorn.run(create_app(runtime, monitor=monitor), host=host, port=port)
 
 
 @app.command("evaluate-ranking")

@@ -238,8 +238,24 @@ def evaluate_ranking(
     splits: str = "data/splits/event_splits.parquet",
     models: str = "models/tabular",
     output: str = "reports/ranking",
+    labels_csv: str = "",
+    label_column: str = "expert_label_stage_2",
+    min_rows: int = 300,
 ) -> None:
     """Evaluate the untouched ranking rows without model mutation."""
+    if labels_csv:
+        from thermis.evaluation import score_labeled_ranking
+
+        report = score_labeled_ranking(
+            Path(features), Path(splits), Path(models),
+            Path(labels_csv), label_column, Path(output), min_rows,
+        )
+        typer.echo(
+            f"labeled={report['labeled_rows']} macro_f1={report['macro_f1']:.3f} "
+            f"ind_recall={report['industrial_recall']:.3f} "
+            f"authoritative={report['authoritative']} promoted={report['promoted']}"
+        )
+        return
     report = evaluate_ranking_set(Path(features), Path(splits), Path(models), Path(output))
     typer.echo(
         f"ranking_rows={report['ranking_rows']} promoted={report['promoted']} "

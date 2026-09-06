@@ -86,6 +86,14 @@ def main() -> None:
     queue["expert_label_stage_1"] = ""
     queue["expert_label_stage_2"] = ""
     queue["expert_notes"] = ""
+    dates = pd.to_datetime(queue["timestamp_utc"], utc=True).dt.strftime("%Y-%m-%d")
+    queue["worldview_url"] = [
+        f"https://worldview.earthdata.nasa.gov/?v={lon - 3:.2f},{lat - 2:.2f},"
+        f"{lon + 3:.2f},{lat + 2:.2f}&l=Coastlines_15m,"
+        f"VIIRS_SNPP_Thermal_Anomalies_375m_Day,"
+        f"VIIRS_SNPP_Thermal_Anomalies_375m_Night&t={day}&lg=true"
+        for lon, lat, day in zip(queue["longitude"], queue["latitude"], dates)
+    ]
     queue.to_csv(OUT, index=False)
     filled = queue[queue["suggested_stage_2"] != ""]
     print(f"queue={len(queue)} suggested={len(filled)} -> {OUT}")

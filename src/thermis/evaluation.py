@@ -140,7 +140,9 @@ def score_labeled_ranking(
             "support": int((truth == name).sum()),
         }
     ind_truth = truth == INDUSTRIAL_CLASS
-    industrial_recall = float((pred[ind_truth] == INDUSTRIAL_CLASS).mean()) if ind_truth.any() else 0.0
+    industrial_recall = (
+        float((pred[ind_truth] == INDUSTRIAL_CLASS).mean()) if ind_truth.any() else 0.0
+    )
     industrial_precision = per_class.get(INDUSTRIAL_CLASS, {}).get("precision", 0.0)
     non_persistent = truth != PERSISTENT_CLASS
     persistent_false_alert = (

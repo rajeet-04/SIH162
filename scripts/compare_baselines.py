@@ -23,6 +23,12 @@ ROOT = Path(__file__).resolve().parent.parent
 REPORT = ROOT / "reports" / "baseline_comparison.json"
 SEED = 26162
 
+# Features the label rules read directly; removing them measures how much of
+# the score is rule reconstruction vs independent signal.
+RULE_FEATURES = frozenset(
+    {"prior_detections_90d", "nearest_flare_distance_m", "nearest_industrial_distance_m"}
+)
+
 
 def dev_frame(target: str) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]:
     features = pd.read_parquet(ROOT / "data/features/event_features.parquet")
@@ -39,6 +45,10 @@ def dev_frame(target: str) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Se
     cutoff = max(1, min(len(dev) - 1, int(len(dev) * 0.80)))
     fit, val = dev.iloc[:cutoff], dev.iloc[cutoff:]
     return fit[available], fit[target], val[available], val[target]
+
+
+def drop_rule_features(frame: pd.DataFrame) -> pd.DataFrame:
+    return frame.drop(columns=[c for c in frame.columns if c in RULE_FEATURES])
 
 
 def score(name: str, model, x_fit, y_fit, x_val, y_val) -> dict:
@@ -61,6 +71,9 @@ def main() -> None:
                   x_fit, y_fit, x_val, y_val),
             score("hist_gbm", HistGradientBoostingClassifier(random_state=SEED),
                   x_fit, y_fit, x_val, y_val),
+            score("hist_gbm_no_rule_feats",
+                  HistGradientBoostingClassifier(random_state=SEED),
+                  drop_rule_features(x_fit), y_fit, drop_rule_features(x_val), y_val),
         ]
         bundle = load_bundle(ROOT / "models/tabular" / f"{stage}.joblib")
         rows.append({"model": "catboost_shipped", "macro_f1": bundle["metrics"]["macro_f1"]})

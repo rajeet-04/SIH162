@@ -38,11 +38,18 @@ is enforced for image records.
 
 ## Current artifacts
 
-Stage 1 and Stage 2 are calibrated CatBoost classifiers. Each currently has
-1,022 fit rows, 256 calibration rows, and `ranking_rows_used=0`. Baseline comparison
-(`reports/baseline_comparison.json`): logreg 0.75 vs RF/HGB/CatBoost 1.0
-macro-F1 — tree models tie at the ceiling because labels are rule-derived, so
-CatBoost is retained for calibrated probabilities, not an accuracy edge. The shipped image
+Stage 1 and Stage 2 are calibrated CatBoost classifiers on the exp branch,
+retrained under an honest protocol: `nearest_industrial_distance_m` removed
+from model inputs (it duplicated flare distance exactly), and a chronological
+three-way split — 894 fit / 192 calibration / 192 validation rows, metrics from
+the untouched validation slice only, `ranking_rows_used=0`. Ablation
+(`reports/baseline_comparison.json`): HGB without the three rule-read features
+scores 0.56 macro-F1 vs 0.99+ with them, so the headline score measures
+decision-logic reproduction, not field accuracy. Do not present it as
+real-world performance; promotion stays blocked pending authoritative labels.
+Baseline detail: logreg 0.75 vs RF/HGB/CatBoost 1.0 macro-F1 — tree models tie
+at the ceiling because labels are rule-derived, so CatBoost is retained for
+calibrated probabilities, not an accuracy edge. The shipped image
 verifier is a ResNet18 trained with grouped dev-val early stopping (31,893 fit
 + 3,544 dev-val rows, batch 320, AMP, augmentation, weight decay 1e-4 on the
 RTX 5050; best epoch 4 of 8, dev-val NLL 0.86) and exported as CPU-loadable

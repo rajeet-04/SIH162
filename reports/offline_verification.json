@@ -7,20 +7,20 @@
   },
   "tabular_bundles": {
     "stage1": {
-      "fit_rows": 1022,
-      "calibration_rows": 256,
+      "fit_rows": 894,
+      "calibration_rows": 192,
       "metrics": {
-        "macro_f1": 0.9914751914751915,
-        "recall": 0.9939759036144578
+        "macro_f1": 1.0,
+        "recall": 1.0
       },
       "model": "CalibratedClassifierCV"
     },
     "stage2": {
-      "fit_rows": 1022,
-      "calibration_rows": 256,
+      "fit_rows": 894,
+      "calibration_rows": 192,
       "metrics": {
-        "macro_f1": 0.9914751914751915,
-        "recall": 0.9939759036144578
+        "macro_f1": 1.0,
+        "recall": 1.0
       },
       "model": "CalibratedClassifierCV"
     }

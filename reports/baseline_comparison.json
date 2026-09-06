@@ -9,7 +9,7 @@
       },
       {
         "model": "catboost_shipped",
-        "macro_f1": 0.9914751914751915
+        "macro_f1": 1.0
       },
       {
         "model": "hist_gbm",
@@ -17,7 +17,11 @@
       },
       {
         "model": "logreg",
-        "macro_f1": 0.6833333333333333
+        "macro_f1": 0.6784916246676779
+      },
+      {
+        "model": "hist_gbm_no_rule_feats",
+        "macro_f1": 0.5601145535016923
       }
     ],
     "val_rows": 256,
@@ -31,7 +35,7 @@
       },
       {
         "model": "catboost_shipped",
-        "macro_f1": 0.9914751914751915
+        "macro_f1": 1.0
       },
       {
         "model": "hist_gbm",
@@ -39,7 +43,11 @@
       },
       {
         "model": "logreg",
-        "macro_f1": 0.6833333333333333
+        "macro_f1": 0.6784916246676779
+      },
+      {
+        "model": "hist_gbm_no_rule_feats",
+        "macro_f1": 0.5601145535016923
       }
     ],
     "val_rows": 256,

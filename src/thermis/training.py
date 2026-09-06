@@ -53,23 +53,29 @@ def _fit_one(
     )
     if "timestamp_utc" in development:
         development = development.sort_values("timestamp_utc")
-    cutoff = max(1, min(len(development) - 1, int(len(development) * 0.80)))
-    fit_frame = development.iloc[:cutoff]
-    validation_frame = development.iloc[cutoff:]
-    if fit_frame[target].nunique() < 2 or validation_frame[target].nunique() < 2:
-        raise ValueError(f"{target} chronological holdout lacks both classes")
+    # Three-way chronological cut: fit -> calibrate -> validate. The validation
+    # slice never touches fitting or calibration; reported metrics come from it.
+    n = len(development)
+    fit_end = max(1, min(n - 2, int(n * 0.70)))
+    cal_end = max(fit_end + 1, min(n - 1, int(n * 0.85)))
+    fit_frame = development.iloc[:fit_end]
+    calibration_frame = development.iloc[fit_end:cal_end]
+    validation_frame = development.iloc[cal_end:]
+    for part in (fit_frame, calibration_frame, validation_frame):
+        if part[target].nunique() < 2:
+            raise ValueError(f"{target} chronological split lacks both classes")
     model.fit(fit_frame[feature_columns], fit_frame[target])
     # scikit-learn 1.6+ represents a prefit estimator explicitly.  Keeping
     # the estimator frozen makes the calibration-only holdout unable to
     # refit the CatBoost model or accidentally consume ranking rows.
-    smallest_class = int(validation_frame[target].value_counts().min())
+    smallest_class = int(calibration_frame[target].value_counts().min())
     calibration_cv = min(5, smallest_class)
     if calibration_cv < 2:
         raise ValueError(f"{target} calibration holdout needs at least two rows per class")
     calibrated = CalibratedClassifierCV(
         FrozenEstimator(model), method="sigmoid", cv=calibration_cv
     )
-    calibrated.fit(validation_frame[feature_columns], validation_frame[target])
+    calibrated.fit(calibration_frame[feature_columns], calibration_frame[target])
     pred = calibrated.predict(validation_frame[feature_columns]).ravel()
     metrics = {
         "macro_f1": float(f1_score(validation_frame[target], pred, average="macro")),
@@ -82,6 +88,7 @@ def _fit_one(
         "class_order": [str(value) for value in model.classes_],
         "metrics": metrics,
         "training_rows": int(len(fit_frame)),
+        "calibration_rows": int(len(calibration_frame)),
         "validation_rows": int(len(validation_frame)),
         "ranking_rows_used": 0,
     }

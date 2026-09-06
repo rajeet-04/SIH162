@@ -14,7 +14,10 @@ FEATURE_COLUMNS: Final[tuple[str, ...]] = (
     "prior_detections_90d",
     "stationary_count_90d",
     "nearest_flare_distance_m",
-    "nearest_industrial_distance_m",
+    # nearest_industrial_distance_m deliberately excluded: build_event_features
+    # populates it from the same gas-flaring points, so it duplicates
+    # nearest_flare_distance_m exactly (ponytail: restore when a real OSM
+    # industrial-facility source lands).
 )
 
 

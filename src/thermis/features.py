@@ -55,10 +55,13 @@ def add_persistence_features(
         for days in windows_days:
             cutoff = current_time - np.timedelta64(days, "D")
             outputs[f"prior_detections_{days}d"][position] = int(
-                np.count_nonzero((timestamps[:position] >= cutoff) & (distance_km <= radius_km))
+                np.count_nonzero((timestamps[:position] >= cutoff)
+                                 & (timestamps[:position] < current_time)
+                                 & (distance_km <= radius_km))
             )
         stationary[position] = int(
             np.count_nonzero((timestamps[:position] >= current_time - np.timedelta64(90, "D"))
+                             & (timestamps[:position] < current_time)
                              & (distance_km <= radius_km))
         )
     for name, values in outputs.items():
@@ -76,8 +79,11 @@ def build_event_features(events: pd.DataFrame, context: object | None = None) ->
     result["feature_as_of_utc"] = pd.to_datetime(result["timestamp_utc"], utc=True)
     result["nearest_flare_distance_m"] = np.nan
     result["nearest_industrial_distance_m"] = np.nan
-    if isinstance(context, dict) and isinstance(context.get("flare_points"), pd.DataFrame):
-        points = context["flare_points"]
+    for kind in ("flare", "industrial"):
+        if not isinstance(context, dict) or not isinstance(context.get(f"{kind}_points"),
+                                                          pd.DataFrame):
+            continue
+        points = context[f"{kind}_points"]
         valid = points[["latitude", "longitude"]].dropna()
         point_lat = valid["latitude"].to_numpy(dtype=float)
         point_lon = valid["longitude"].to_numpy(dtype=float)
@@ -86,6 +92,5 @@ def build_event_features(events: pd.DataFrame, context: object | None = None) ->
                 float(row["latitude"]), float(row["longitude"]), point_lat, point_lon
             )
             nearest_m = float(np.min(distances) * 1000) if len(distances) else np.nan
-            result.at[index, "nearest_flare_distance_m"] = nearest_m
-            result.at[index, "nearest_industrial_distance_m"] = nearest_m
+            result.at[index, f"nearest_{kind}_distance_m"] = nearest_m
     return result

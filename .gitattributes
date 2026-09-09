@@ -1,0 +1,2 @@
+# Preserve generated review CSV bytes so frozen-reference SHA-256 is portable.
+reviews/thermal-v1/*.csv -text

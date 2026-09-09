@@ -1,0 +1,12 @@
+sources:
+  structured: D:/data/csv_output
+  flaresat: D:/data/flaresat_github
+  fire_archives: D:/data/firesat_1
+  burned_area: D:/data/MCD64A1
+  burned_area_extra: R:/file
+  npz_scene1: D:/data/scene1
+  npz_scene2: D:/data/scene2
+  npz_scene3: D:/data/scene3
+  npz_scene4: D:/data/scene4
+# MiCASA is deferred: carbon-flux context is not a fire-type training label.
+# Global Fire Atlas is not event-aligned with the current 2026 FIRMS cohort.

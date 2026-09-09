@@ -21,6 +21,8 @@ data/labels/
 data/splits/
 models/
 reports/generated/
+data/runs/
+.pytest-tmp*/
 
 # Frontend
 app/node_modules/

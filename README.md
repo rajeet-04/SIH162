@@ -1,5 +1,16 @@
 # THERMIS — SIH26162 MVP
 
+Team labeling: [six assigned reviewer CSVs and instructions](reviews/thermal-v1/README.md)
+contain 600 non-overlapping development cases (100 per collaborator). Review only
+your own file. These labels do not constitute a completed ranking benchmark.
+
+Experimental historical-data and CUDA retraining work is documented in
+[Research training](docs/research-training.md), with reproducible acquisition,
+resume and CPU inference instructions. The new unsupervised thermal-novelty model
+is a research component, not a replacement fire classifier. See the companion
+[data-quality notebook](notebooks/research-data-quality.ipynb) and
+[classifier retraining status](docs/retraining-status.md).
+
 THERMIS is an offline-capable decision-support MVP for detecting and triaging
 industrial fires and persistent thermal sources. It combines a calibrated
 tabular model with a supporting image verifier, live NASA FIRMS ingestion,

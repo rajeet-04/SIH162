@@ -43,6 +43,28 @@ def test_packets_have_exclusive_ownership_and_no_sealed_rows(tmp_path):
     assert validate_packets(tmp_path / "review")["pending"] == 12
 
 
+def test_worldview_urls_open_with_reviewer_ready_layers_and_viewport(tmp_path):
+    root = tmp_path / "review"
+    build_packets(observations(), root, ["alice"], count=6, cutoff="2025-01-01")
+    packet = pd.read_csv(root / "alice.csv")
+    row = packet.iloc[0]
+    lat = float(row.latitude)
+    lon = float(row.longitude)
+    expected_view = f"v={lon - 0.04:.5f},{lat - 0.02:.5f},{lon + 0.04:.5f},{lat + 0.02:.5f}"
+    url = row.worldview_url
+    assert expected_view in url
+    assert "VIIRS_SNPP_Thermal_Anomalies_375m_All" in url
+    assert "VIIRS_SNPP_CorrectedReflectance_TrueColor" in url
+    assert "VIIRS_NOAA21_CorrectedReflectance_TrueColor(hidden)" in url
+    assert "VIIRS_NOAA20_CorrectedReflectance_TrueColor(hidden)" in url
+    assert "OCI_PACE_True_Color(hidden)" in url
+    assert "Reference_Labels_15m(hidden)" in url
+    assert "DoS_International_Boundaries(hidden)" in url
+    assert "Coastlines_15m" in url
+    assert "&lg=true" in url
+    assert "&t=2024-01-03-T00%3A00%3A00Z" in url
+
+
 def test_validation_rejects_changed_owner_and_unsupported_label(tmp_path):
     root = tmp_path / "review"
     build_packets(observations(), root, ["alice"], count=6, cutoff="2025-01-01")

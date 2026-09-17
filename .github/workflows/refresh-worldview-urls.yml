@@ -1,0 +1,109 @@
+name: Refresh reviewer Worldview URLs
+
+on:
+  push:
+    branches:
+      - codex/retraining-upgrade
+    paths:
+      - .github/workflows/refresh-worldview-urls.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rewrite pending reviewer links and manifest hashes
+        shell: python
+        run: |
+          import csv
+          import hashlib
+          import io
+          import json
+          from pathlib import Path
+
+          root = Path("reviews/thermal-v1")
+          manifest_path = root / "manifest.json"
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          reviewers = list(manifest["reviewers"])
+
+          layers = ",".join(
+              [
+                  "Reference_Labels_15m(hidden)",
+                  "DoS_International_Boundaries(hidden)",
+                  "Coastlines_15m",
+                  "VIIRS_SNPP_Thermal_Anomalies_375m_All",
+                  "OCI_PACE_True_Color(hidden)",
+                  "VIIRS_NOAA21_CorrectedReflectance_TrueColor(hidden)",
+                  "VIIRS_NOAA20_CorrectedReflectance_TrueColor(hidden)",
+                  "VIIRS_SNPP_CorrectedReflectance_TrueColor",
+              ]
+          )
+
+          def worldview_url(row):
+              lat = float(row["latitude"])
+              lon = float(row["longitude"])
+              day = row["representative_timestamp_utc"][:10]
+              return (
+                  "https://worldview.earthdata.nasa.gov/"
+                  f"?v={lon - 0.04:.5f},{lat - 0.02:.5f},{lon + 0.04:.5f},{lat + 0.02:.5f}"
+                  f"&l={layers}&lg=true&t={day}-T00%3A00%3A00Z"
+              )
+
+          def rewrite(path, require_pending=False):
+              raw = path.read_bytes()
+              newline = "\r\n" if b"\r\n" in raw else "\n"
+              reader = csv.DictReader(io.StringIO(raw.decode("utf-8"), newline=""))
+              rows = list(reader)
+              if not reader.fieldnames or "worldview_url" not in reader.fieldnames:
+                  raise SystemExit(f"Missing worldview_url in {path}")
+              if require_pending and any(row.get("review_status") != "pending" for row in rows):
+                  raise SystemExit(f"Refusing to rewrite non-pending packet: {path}")
+              for row in rows:
+                  row["worldview_url"] = worldview_url(row)
+              buffer = io.StringIO(newline="")
+              writer = csv.DictWriter(
+                  buffer,
+                  fieldnames=reader.fieldnames,
+                  lineterminator=newline,
+              )
+              writer.writeheader()
+              writer.writerows(rows)
+              path.write_bytes(buffer.getvalue().encode("utf-8"))
+              return len(rows)
+
+          counts = {"reference_index.csv": rewrite(root / "reference_index.csv")}
+          for reviewer in reviewers:
+              name = f"{reviewer}.csv"
+              counts[name] = rewrite(root / name, require_pending=True)
+
+          expected_rows = int(manifest["rows"])
+          if counts["reference_index.csv"] != expected_rows:
+              raise SystemExit(
+                  f"Reference row count changed: {counts['reference_index.csv']} != {expected_rows}"
+              )
+          if sum(counts[f"{reviewer}.csv"] for reviewer in reviewers) != expected_rows:
+              raise SystemExit("Reviewer packet row counts no longer sum to manifest rows")
+
+          manifest["files"] = {
+              name: hashlib.sha256((root / name).read_bytes()).hexdigest()
+              for name in manifest["files"]
+          }
+          manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+
+          print(json.dumps(counts, indent=2))
+
+      - name: Commit refreshed review packets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add reviews/thermal-v1/*.csv reviews/thermal-v1/manifest.json
+          if git diff --cached --quiet; then
+            echo "Expected reviewer URL changes, but no files changed" >&2
+            exit 1
+          fi
+          git commit -m "chore: refresh reviewer Worldview links"
+          git push

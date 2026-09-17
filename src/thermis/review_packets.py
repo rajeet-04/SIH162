@@ -27,6 +27,26 @@ LABELS = {
     "agricultural_burn_candidate",
     "uncertain",
 }
+WORLDVIEW_LAYERS = ",".join(
+    [
+        "Reference_Labels_15m(hidden)",
+        "DoS_International_Boundaries(hidden)",
+        "Coastlines_15m",
+        "VIIRS_SNPP_Thermal_Anomalies_375m_All",
+        "OCI_PACE_True_Color(hidden)",
+        "VIIRS_NOAA21_CorrectedReflectance_TrueColor(hidden)",
+        "VIIRS_NOAA20_CorrectedReflectance_TrueColor(hidden)",
+        "VIIRS_SNPP_CorrectedReflectance_TrueColor",
+    ]
+)
+
+
+def _worldview_url(lat, lon, day):
+    return (
+        "https://worldview.earthdata.nasa.gov/"
+        f"?v={lon - 0.04:.5f},{lat - 0.02:.5f},{lon + 0.04:.5f},{lat + 0.02:.5f}"
+        f"&l={WORLDVIEW_LAYERS}&lg=true&t={day}-T00%3A00%3A00Z"
+    )
 
 
 def build_packets(frame, output, reviewers, count=600, cutoff="2025-05-18T08:12:00Z"):
@@ -93,10 +113,7 @@ def build_packets(frame, output, reviewers, count=600, cutoff="2025-05-18T08:12:
                 active_dates=window.timestamp_utc.dt.date.nunique(),
                 frp_median_mw=float(window.frp.median()),
                 frp_max_mw=float(window.frp.max()),
-                worldview_url=(
-                    f"https://worldview.earthdata.nasa.gov/?v={lon - 0.08:.5f},"
-                    f"{lat - 0.08:.5f},{lon + 0.08:.5f},{lat + 0.08:.5f}&t={day}"
-                ),
+                worldview_url=_worldview_url(lat, lon, day),
                 osm_url=f"https://www.openstreetmap.org/?mlat={lat:.5f}&mlon={lon:.5f}#map=14/{lat:.5f}/{lon:.5f}",
                 source_product="VIIRS_SNPP_SP",
                 source_archive=f"firms-snpp-{rep.timestamp_utc.year}-v1",

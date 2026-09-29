@@ -1,0 +1,26 @@
+{
+  "model": "resnet18",
+  "torch": "2.13.0+cu130",
+  "cuda_version": "13.0",
+  "device": "cuda",
+  "gpu": "NVIDIA GeForce RTX 5050 Laptop GPU",
+  "training_rows": 31893,
+  "dev_val_rows": 3544,
+  "val_fraction": 0.1,
+  "weight_decay": 0.0001,
+  "augment": true,
+  "batch_size": 320,
+  "amp": true,
+  "num_workers": 2,
+  "epochs": 8,
+  "best_epoch": 4,
+  "val_nll_best": 0.8622820318148852,
+  "ranking_rows_used": 0,
+  "cpu_export": "models/image-smoke/image_verifier.ts",
+  "cpu_output_shape": [
+    1,
+    2
+  ],
+  "loss_final": 0.002748814644291997,
+  "ranking_rows": 12555
+}

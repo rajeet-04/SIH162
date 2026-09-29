@@ -1,0 +1,15 @@
+seed: 26162
+timezone: UTC
+ranking_fraction: 0.10
+persistence_radius_km: 5.0
+history_windows_days: [7, 30, 90]
+model:
+  type: catboost
+  iterations: 600
+  depth: 7
+  learning_rate: 0.05
+  loss_function: MultiClass
+  verbose: false
+split:
+  train_fraction: 0.90
+  ranking_fraction: 0.10

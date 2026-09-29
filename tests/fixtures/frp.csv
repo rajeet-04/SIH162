@@ -1,0 +1,2 @@
+latitude,longitude,time,FRP_MWIR,FRP_uncertainty_MWIR,BT_MIR,zone,source_file
+22.5,41.7,747342048925155,2.85,0.30,307.25,gulf_flaring,scene.zip

@@ -1,4 +1,9 @@
 .worktrees/
+.env
+.env.*
+!.env.example
+data/live/
+data/secrets/
 
 # Python
 .venv/
@@ -19,7 +24,13 @@ reports/generated/
 
 # Frontend
 app/node_modules/
+app/.wrangler/
 app/dist/
+app/.bun-cache/
+app/.bun-tmp/
+app/*.tsbuildinfo
+app/vite.config.js
+app/vite.config.d.ts
 app/playwright-report/
 app/test-results/
 .presentation-build/
@@ -34,3 +45,7 @@ output/
 /*.log
 /mvp-link/
 /ppt-review-*/
+.playwright-cli/
+
+reports/ranking/
+app/.output

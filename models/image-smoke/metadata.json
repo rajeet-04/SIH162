@@ -1,0 +1,23 @@
+{
+  "classes": [
+    "fire",
+    "no_fire"
+  ],
+  "device": "cuda",
+  "cuda_available": true,
+  "cuda_version": "13.0",
+  "training_rows": 31893,
+  "dev_val_rows": 3544,
+  "val_fraction": 0.1,
+  "weight_decay": 0.0001,
+  "augment": true,
+  "batch_size": 320,
+  "amp": true,
+  "num_workers": 2,
+  "epochs": 8,
+  "best_epoch": 4,
+  "val_nll_best": 0.8622820318148852,
+  "loss_final": 0.002748814644291997,
+  "ranking_rows": 12555,
+  "ranking_rows_used": 0
+}

@@ -1,0 +1,55 @@
+{
+  "offline": true,
+  "event_rows": 12165,
+  "split_counts": {
+    "development": 10948,
+    "ranking": 1217
+  },
+  "tabular_bundles": {
+    "stage1": {
+      "fit_rows": 894,
+      "calibration_rows": 192,
+      "metrics": {
+        "macro_f1": 1.0,
+        "recall": 1.0
+      },
+      "model": "CalibratedClassifierCV"
+    },
+    "stage2": {
+      "fit_rows": 894,
+      "calibration_rows": 192,
+      "metrics": {
+        "macro_f1": 1.0,
+        "recall": 1.0
+      },
+      "model": "CalibratedClassifierCV"
+    }
+  },
+  "image_verifier": {
+    "device": "cpu",
+    "output_shape": [
+      1,
+      2
+    ],
+    "training_rows": 31893,
+    "dev_val_rows": 3544,
+    "best_epoch": 4,
+    "val_nll_best": 0.8622820318148852,
+    "ranking_rows": 12555,
+    "batch_size": 320,
+    "amp": true
+  },
+  "image_split_counts": {
+    "development": 35437,
+    "ranking": 12555
+  },
+  "demo_events": 3,
+  "api": {
+    "health": 200,
+    "events": 200,
+    "metrics": 200,
+    "predict": 200,
+    "verify_image": 200
+  },
+  "ranking_promotion": "blocked_pending_authoritative_labels"
+}

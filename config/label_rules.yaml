@@ -1,0 +1,5 @@
+flare_distance_m: 1000
+industrial_distance_m: 1500
+persistent_count_90d: 10
+stationary_spread_rate_km_h: 0.1
+minimum_supervised_confidence: 0.70

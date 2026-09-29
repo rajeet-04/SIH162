@@ -1,0 +1,104 @@
+{
+  "demo-industrial-fire": {
+    "event_id": "demo-industrial-fire",
+    "latitude": 29.90999,
+    "longitude": 74.94506,
+    "prediction": {
+      "final_class": "industrial_fire_candidate",
+      "confidence": 0.72,
+      "model_version": "tabular-local-0.1-demo"
+    },
+    "evidence": {
+      "frp": 13.22,
+      "prior_detections_90d": 0,
+      "nearest_flare_distance_m": 559.0279134788818,
+      "label_source": "industrial_proximity"
+    },
+    "timeline_90d": [
+      {
+        "days_ago": 90,
+        "prior_detections": 0
+      },
+      {
+        "days_ago": 30,
+        "prior_detections": 0
+      },
+      {
+        "days_ago": 7,
+        "prior_detections": 0
+      },
+      {
+        "days_ago": 0,
+        "frp": 13.22
+      }
+    ]
+  },
+  "demo-persistent-heat": {
+    "event_id": "demo-persistent-heat",
+    "latitude": 29.47193,
+    "longitude": 76.86103,
+    "prediction": {
+      "final_class": "persistent_industrial_heat_or_flare",
+      "confidence": 0.9,
+      "model_version": "tabular-local-0.1-demo"
+    },
+    "evidence": {
+      "frp": 3.16,
+      "prior_detections_90d": 12,
+      "nearest_flare_distance_m": 504.62841662912484,
+      "label_source": "known_flare_and_persistence"
+    },
+    "timeline_90d": [
+      {
+        "days_ago": 90,
+        "prior_detections": 0
+      },
+      {
+        "days_ago": 30,
+        "prior_detections": 12
+      },
+      {
+        "days_ago": 7,
+        "prior_detections": 12
+      },
+      {
+        "days_ago": 0,
+        "frp": 3.16
+      }
+    ]
+  },
+  "demo-uncertain": {
+    "event_id": "demo-uncertain",
+    "latitude": 30.87475,
+    "longitude": 82.85634,
+    "prediction": {
+      "final_class": "uncertain_review_required",
+      "confidence": 0.4,
+      "model_version": "tabular-local-0.1-demo"
+    },
+    "evidence": {
+      "frp": 7.01,
+      "prior_detections_90d": 0,
+      "nearest_flare_distance_m": 574225.1340489743,
+      "label_source": "insufficient_evidence"
+    },
+    "timeline_90d": [
+      {
+        "days_ago": 90,
+        "prior_detections": 0
+      },
+      {
+        "days_ago": 30,
+        "prior_detections": 0
+      },
+      {
+        "days_ago": 7,
+        "prior_detections": 0
+      },
+      {
+        "days_ago": 0,
+        "frp": 7.01
+      }
+    ]
+  }
+}

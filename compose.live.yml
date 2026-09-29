@@ -1,0 +1,35 @@
+services:
+  backend:
+    image: thermis-uv-cache:exp-real-data-retrain
+    working_dir: /workspace
+    command: >
+      sh -lc "uv sync --no-dev --link-mode=copy && .venv/bin/thermis serve --live
+      --poll-seconds 300 --host 0.0.0.0 --port 8000"
+    environment:
+      FIRMS_KEYS_FILE: /run/secrets/firms.mapkey
+    volumes:
+      - ../SIH162-exp:/workspace
+      - backend-venv:/workspace/.venv
+      - D:/data/firms_india/.map_keys:/run/secrets/firms.mapkey:ro
+    ports:
+      - "127.0.0.1:8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    image: thermis-bun-cache:exp-real-data-retrain
+    working_dir: /workspace/app
+    command: sh -lc "bun install --frozen-lockfile && bun run dev --host 0.0.0.0 --port 5175"
+    environment:
+      THERMIS_API_URL: http://backend:8000
+    volumes:
+      - ../SIH162-exp/app:/workspace/app
+      - frontend-modules:/workspace/app/node_modules
+    ports:
+      - "127.0.0.1:5175:5175"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  backend-venv:
+  frontend-modules:

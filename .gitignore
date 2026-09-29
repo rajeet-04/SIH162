@@ -22,3 +22,15 @@ app/node_modules/
 app/dist/
 app/playwright-report/
 app/test-results/
+.presentation-build/
+.thermis-app-runtime/
+frontend.log
+document-read/
+presentation-build/
+pdf-review-20260916/
+output/
+
+# Local runtime and review artifacts
+/*.log
+/mvp-link/
+/ppt-review-*/
